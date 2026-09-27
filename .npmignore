@@ -1,0 +1,4 @@
+# The "files" field of package.json decides what is published. This file
+# exists so that yarn does not apply .gitignore, whose "!.qlty/qlty.toml"
+# negation would otherwise add that file to the package.
+.qlty/
