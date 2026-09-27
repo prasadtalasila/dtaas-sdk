@@ -12,6 +12,7 @@ describe('dtaasKitConfig', () => {
       'no-restricted-globals',
       'no-restricted-imports',
       'no-restricted-properties',
+      'no-restricted-syntax',
     ]);
     expect(dtaasKitConfig[0].plugins).toBeUndefined();
   });

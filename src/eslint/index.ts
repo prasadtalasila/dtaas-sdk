@@ -32,10 +32,32 @@ const importPatterns = [
   { group: SOCKET_LIBRARIES, message: USE_SIGNALS },
 ];
 
+/** esquery selector for `import('<source>')` whose source matches `pattern`. */
+const dynamicImport = (pattern: string, message: string) => ({
+  selector: `ImportExpression[source.value=/${pattern}/]`,
+  message,
+});
+
+// The same boundaries for import(), the idiom this contract uses for lazy code.
+const dynamicImports = [
+  dynamicImport(
+    '^(mqtt|@stomp\\/stompjs|@influxdata\\/influxdb-client|socket\\.io-client|ws)(\\/|$)',
+    USE_SIGNALS,
+  ),
+  dynamicImport(
+    '^@into-cps-association\\/dtaas-web(\\/|$)',
+    `Extensions never import the host; use HostServices from ${SDK}.`,
+  ),
+  dynamicImport(
+    '^@into-cps-association\\/dtaas-visualisation(\\/(?!contribute(\\/|$))|$)',
+    CORE_MESSAGE,
+  ),
+];
+
 const socketGlobals = ['WebSocket', 'EventSource'];
 
 const propertyRestrictions = [
-  ...['globalThis', 'window'].flatMap((object) => [
+  ...['globalThis', 'window', 'self'].flatMap((object) => [
     {
       object,
       property: 'env',
@@ -53,7 +75,8 @@ const propertyRestrictions = [
 /**
  * Where an extension may reach (architecture §6.3). Spread it into a kit's
  * `eslint.config.mjs`; it uses core ESLint rules only. A later config that
- * sets the same rules replaces these options rather than merging with them.
+ * sets the same rules replaces these options rather than merging with them;
+ * airbnb-base sets `no-restricted-syntax`, so spread this config after it.
  */
 const dtaasKitConfig: Linter.Config[] = [
   {
@@ -71,6 +94,7 @@ const dtaasKitConfig: Linter.Config[] = [
         ...socketGlobals.map((name) => ({ name, message: USE_SIGNALS })),
       ],
       'no-restricted-properties': ['error', ...propertyRestrictions],
+      'no-restricted-syntax': ['error', ...dynamicImports],
     },
   },
 ];

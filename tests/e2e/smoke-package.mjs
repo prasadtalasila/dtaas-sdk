@@ -13,6 +13,8 @@ const PEERS = [
   '@testing-library/react@16.3.0',
   '@testing-library/dom@10.4.0',
   'eslint@9.39.5',
+  '@types/react@19.2.6',
+  '@types/react-dom@19.2.3',
 ];
 
 const ALLOWED =
@@ -64,31 +66,52 @@ const eslint = await import('${name}/eslint');
 assert.ok(Array.isArray(eslint.default));
 `;
 
+// The @ts-expect-error lines fail if the SDK's types silently degrade to any.
 const consumerSource = (name) => `
-import { defineExtension, type HostServices } from '${name}';
+import { defineExtension, type DtaasExtension, type HostServices } from '${name}';
 import { encodingSchema } from '${name}/schema';
-import type { FakeHostServices } from '${name}/testing';
+import { fakeHostServices, type FakeHostServices } from '${name}/testing';
 import kitConfig from '${name}/eslint';
 const ext = defineExtension({ id: 'smoke', name: 'Smoke', version: '1.0.0', sdk: 1 });
-const useHostType = (host: HostServices, fake: FakeHostServices) => [host, fake];
-export default [ext, encodingSchema, kitConfig, useHostType];
+// @ts-expect-error sdk must be 1
+const wrong: DtaasExtension = { id: 'x', name: 'x', version: '1', sdk: 2 };
+const fake: FakeHostServices = fakeHostServices();
+const host: HostServices = fake;
+// @ts-expect-error valueAt returns Sampled | undefined
+const reading: number = host.signals.valueAt('a', 'measured');
+export default [ext, wrong, reading, encodingSchema, kitConfig];
 `;
 
-const TSC_OPTIONS = [
-  ['--noEmit', '--strict', '--skipLibCheck'],
-  ['--module', 'esnext', '--moduleResolution', 'bundler', '--target', 'es2019'],
-  ['--jsx', 'react-jsx', '--types', 'react'],
-].flat();
+const BASE_OPTIONS = [
+  '--noEmit',
+  '--strict',
+  '--jsx',
+  'react-jsx',
+  '--target',
+  'es2022',
+];
+
+// A bundler (Vite) consumer and a Node ESM consumer, as a kit may be either.
+const RESOLUTIONS = [
+  {
+    file: 'consumer.ts',
+    options: ['--module', 'esnext', '--moduleResolution', 'bundler'],
+  },
+  {
+    file: 'consumer.mts',
+    options: ['--module', 'nodenext', '--moduleResolution', 'nodenext'],
+  },
+];
 
 const typeCheckConsumer = (directory, name) => {
-  writeFileSync(join(directory, 'consumer.ts'), consumerSource(name));
   const tsc = resolve('node_modules/typescript/bin/tsc');
-  const typeRoots = ['--typeRoots', resolve('node_modules/@types')];
-  execFileSync(
-    process.execPath,
-    [tsc, ...TSC_OPTIONS, ...typeRoots, 'consumer.ts'],
-    { cwd: directory, stdio: 'inherit' },
-  );
+  RESOLUTIONS.forEach(({ file, options }) => {
+    writeFileSync(join(directory, file), consumerSource(name));
+    execFileSync(process.execPath, [tsc, ...BASE_OPTIONS, ...options, file], {
+      cwd: directory,
+      stdio: 'inherit',
+    });
+  });
 };
 
 const runSmokeTest = () => {

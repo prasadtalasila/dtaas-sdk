@@ -3,13 +3,18 @@ import {
   checkIdentity,
   checkShapes,
 } from 'src/extension/validation/identityRules';
+import checkRequiredFields from 'src/extension/validation/fieldRules';
 import checkLaziness from 'src/extension/validation/lazinessRules';
 import {
   checkDetect,
   checkSubstrates,
   checkUniqueness,
 } from 'src/extension/validation/contributionRules';
-import { isObject } from 'src/extension/validation/validationUtils';
+import {
+  describe,
+  isObject,
+  type Loose,
+} from 'src/extension/validation/validationUtils';
 
 export interface ValidationResult {
   readonly valid: boolean;
@@ -20,6 +25,16 @@ export interface ValidateOptions {
   /** Ids the host already uses; defaults to the DTaaS core routes. */
   readonly reservedIds?: readonly string[];
 }
+
+const runRules = (ext: Loose, reservedIds: readonly string[]): string[] => [
+  ...checkIdentity(ext, reservedIds),
+  ...checkShapes(ext),
+  ...checkRequiredFields(ext),
+  ...checkLaziness(ext),
+  ...checkUniqueness(ext),
+  ...checkSubstrates(ext),
+  ...checkDetect(ext),
+];
 
 /**
  * Checks one extension against the contract. Never throws, so the host can
@@ -33,15 +48,14 @@ const validateExtension = (
   if (!isObject(ext)) {
     return { valid: false, errors: ['extension must be an object'] };
   }
-  const errors = [
-    ...checkIdentity(ext, options.reservedIds ?? RESERVED_EXTENSION_IDS),
-    ...checkShapes(ext),
-    ...checkLaziness(ext),
-    ...checkUniqueness(ext),
-    ...checkSubstrates(ext),
-    ...checkDetect(ext),
-  ];
-  return { valid: errors.length === 0, errors };
+  try {
+    const errors = runRules(ext, options.reservedIds ?? RESERVED_EXTENSION_IDS);
+    return { valid: errors.length === 0, errors };
+  } catch (error) {
+    // Getters and proxies can throw; the host must still get a result.
+    const reason = error instanceof Error ? error.message : describe(error);
+    return { valid: false, errors: [`extension could not be read: ${reason}`] };
+  }
 };
 
 export default validateExtension;

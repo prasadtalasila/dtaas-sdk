@@ -24,4 +24,26 @@ describe('installSocketGuard', () => {
     expect(globalThis.WebSocket).toBe(original);
     expect('EventSource' in globalThis).toBe(false);
   });
+
+  it('stays installed until every overlapping guard is restored', () => {
+    const original = globalThis.WebSocket;
+    const first = installSocketGuard();
+    const second = installSocketGuard();
+    first.restore();
+    expect(() => new WebSocket('wss://late')).toThrow(SocketBlockedError);
+    expect(second.attempts).toEqual(['wss://late']);
+    second.restore();
+    expect(globalThis.WebSocket).toBe(original);
+  });
+
+  it('ignores a second restore of the same guard', () => {
+    const original = globalThis.WebSocket;
+    const first = installSocketGuard();
+    const second = installSocketGuard();
+    first.restore();
+    first.restore();
+    expect(globalThis.WebSocket).not.toBe(original);
+    second.restore();
+    expect(globalThis.WebSocket).toBe(original);
+  });
 });

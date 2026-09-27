@@ -55,7 +55,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup && tsc --project tsconfig.build.json && tsc-alias --project tsconfig.build.json",
+    "build": "tsup && tsc --project tsconfig.build.json && tsc-alias --project tsconfig.build.json && node scripts/resolve-declaration-paths.mjs dist",
     "typecheck": "tsc --project tsconfig.eslint.json --noEmit",
     "clean": "node --eval \"const { rmSync } = require('node:fs'); ['coverage', 'dist'].forEach((path) => rmSync(path, { recursive: true, force: true }))\"",
     "format": "prettier --write \"*.{ts,mjs,json,md}\" \"{src,tests,examples}/**/*.{ts,tsx,mjs,json,md}\" \"docs/*.md\"",
@@ -70,7 +70,7 @@
     "prep": "qlty fmt && yarn format && yarn syntax && qlty check --fix && yarn typecheck && yarn test:all",
     "validate:package": "yarn typecheck && yarn test:e2e"
   },
-  "// build": "tsup emits ESM JavaScript for the four entries; tsc emits declarations; tsc-alias rewrites src/* aliases to relative paths.",
+  "// build": "tsup emits ESM JavaScript for the four entries; tsc emits declarations; tsc-alias rewrites src/* aliases to relative paths; resolve-declaration-paths adds the .js extensions Node ESM consumers need.",
   "// test:coverage": "Runs unit and integration tests together and enforces the coverage gate that matches .codecov.yml.",
   "// test:e2e": "Builds, packs and installs the tarball into a clean project, then imports every subpath.",
   "prettier": {

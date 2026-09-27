@@ -1,6 +1,6 @@
 import { isLazyComponent, isLazyLoader } from 'src/extension/lazy';
 import {
-  asList,
+  entries,
   entryLabel,
   type ListSpec,
   listSpec,
@@ -22,8 +22,10 @@ const checkEntries = (
   problem: string,
 ): string[] => {
   const isLazy = property === 'element' ? isLazyComponent : isLazyLoader;
-  return asList(spec.pick(ext)).flatMap((item, i) =>
-    isLazy(item[property]) ? [] : [`${entryLabel(spec, item, i)}: ${problem}`],
+  return entries(spec.pick(ext)).flatMap((entry) =>
+    isLazy(entry.item[property])
+      ? []
+      : [`${entryLabel(spec, entry)}: ${problem}`],
   );
 };
 

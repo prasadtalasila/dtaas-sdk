@@ -87,7 +87,11 @@ export const extension = defineExtension({
 
 - `id` does not match `^[a-z][a-z0-9-]*$` or collides with a core route
   (`library`, `digitaltwins`, `workbench`, …);
-- `sdk` is not `1`;
+- `name` or `version` is empty, or `sdk` is not `1`;
+- a contribution list is not an array, one of its items is not an object, or
+  an item lacks a field the host reads (a route's `path`, a navigation item's
+  `label` and `path`, a tab's `applies`, an anchor kind's `resolve`, …);
+- `visualisation` is present but not an object, or has no `detect` function;
 - a route, tab or preview `element`, or the `inspectorPanel`, is not a
   `React.lazy` component;
 - a converter, field kernel or substrate `load` is not a zero-argument
@@ -146,16 +150,18 @@ export default [
 ];
 ```
 
-They forbid importing `@into-cps-association/dtaas-web`, importing
-`@into-cps-association/dtaas-visualisation` outside `contribute/*`, socket and
-broker clients (`mqtt`, `@stomp/stompjs`, `@influxdata/influxdb-client`,
-`socket.io-client`, `ws`), the `WebSocket` and `EventSource` globals, and
-reading `globalThis.env` directly.
+They forbid importing — statically or with `import()` —
+`@into-cps-association/dtaas-web`, `@into-cps-association/dtaas-visualisation`
+outside `contribute/*`, and socket and broker clients (`mqtt`,
+`@stomp/stompjs`, `@influxdata/influxdb-client`, `socket.io-client`, `ws`).
+They also forbid the `WebSocket` and `EventSource` globals and reading `env`,
+`WebSocket` or `EventSource` through `globalThis`, `window` or `self`.
 
 ESLint replaces, rather than merges, the options of a rule configured twice.
 If your own configuration also sets `no-restricted-imports`,
-`no-restricted-globals` or `no-restricted-properties`, put
-`...dtaasKitConfig` last, or copy its options into yours.
+`no-restricted-globals`, `no-restricted-properties` or `no-restricted-syntax`
+(airbnb-base sets the last one), put `...dtaasKitConfig` last, or copy its
+options into yours.
 
 ## Testing
 

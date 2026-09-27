@@ -48,6 +48,34 @@ describe('the kit ESLint config', () => {
     ]);
   });
 
+  it.each([
+    "const mqtt = await import('mqtt');",
+    "const stomp = await import('@stomp/stompjs');",
+    "const ws = await import('ws');",
+    "const store = await import('@into-cps-association/dtaas-web/store');",
+    "const store = await import('@into-cps-association/dtaas-visualisation/store');",
+    "const viz = await import('@into-cps-association/dtaas-visualisation');",
+  ])('forbids the dynamic import %s', (code) => {
+    expect(lint(code)).toEqual(['no-restricted-syntax']);
+  });
+
+  it.each([
+    "const c = await import('@into-cps-association/dtaas-visualisation/contribute/presets');",
+    "const page = await import('./pages/WindPage');",
+    "const mqttish = await import('mqtt-pattern');",
+  ])('allows the dynamic import %s', (code) => {
+    expect(lint(code)).toEqual([]);
+  });
+
+  it('forbids sockets and env through self', () => {
+    expect(lint("const s = new self.WebSocket('wss://x');")).toEqual([
+      'no-restricted-properties',
+    ]);
+    expect(lint('const url = self.env.REACT_APP_URL;')).toEqual([
+      'no-restricted-properties',
+    ]);
+  });
+
   it('forbids reading env.js directly', () => {
     expect(lint('const url = globalThis.env.REACT_APP_URL;')).toEqual([
       'no-restricted-properties',

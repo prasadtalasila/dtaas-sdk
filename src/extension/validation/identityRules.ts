@@ -1,5 +1,6 @@
 import { SDK_MAJOR } from 'src/extension/constants';
 import {
+  isObject,
   LIST_SPECS,
   type Loose,
   visualisationOf,
@@ -31,7 +32,12 @@ export const checkIdentity = (
   ...(ext.sdk === SDK_MAJOR ? [] : [`sdk must be ${SDK_MAJOR}`]),
 ];
 
-/** Contribution containers have the right JavaScript type. */
+const nonObjectItems = (label: string, items: unknown[]): string[] =>
+  items.flatMap((item, i) =>
+    isObject(item) ? [] : [`${label}[${i}] must be an object`],
+  );
+
+/** Contribution containers and their items have the right JavaScript type. */
 export const checkShapes = (ext: Loose): string[] => {
   const errors: string[] = [];
   if (ext.visualisation !== undefined && !visualisationOf(ext)) {
@@ -42,6 +48,7 @@ export const checkShapes = (ext: Loose): string[] => {
     if (value !== undefined && !Array.isArray(value)) {
       errors.push(`${spec.label} must be an array`);
     }
+    if (Array.isArray(value)) errors.push(...nonObjectItems(spec.label, value));
   });
   return errors;
 };

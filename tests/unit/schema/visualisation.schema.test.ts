@@ -77,4 +77,14 @@ describe('visualisationAssetSchema', () => {
     asset.encodings = [binding];
     expect(issuePaths(asset)).toEqual([['encodings', 0]]);
   });
+
+  it('does not treat inherited object keys as substrates', () => {
+    const asset = clone();
+    asset.layout.panes.push('toString');
+    asset.encodings[0].substrate = 'constructor';
+    expect(issuePaths(asset)).toEqual([
+      ['layout', 'panes', 3],
+      ['encodings', 0, 'substrate'],
+    ]);
+  });
 });

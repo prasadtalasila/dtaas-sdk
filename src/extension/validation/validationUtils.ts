@@ -4,48 +4,82 @@ export type Loose = Record<string, unknown>;
 export const isObject = (value: unknown): value is Loose =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** The objects of a list, or `[]` when the value is not a list. */
-export const asList = (value: unknown): Loose[] =>
-  Array.isArray(value) ? value.map((item) => (isObject(item) ? item : {})) : [];
+/** An object item of a contribution list, with its index in that list. */
+export interface Entry {
+  readonly item: Loose;
+  readonly index: number;
+}
+
+/** The object items of a list; non-objects are reported by `checkShapes`. */
+export const entries = (value: unknown): Entry[] =>
+  Array.isArray(value)
+    ? value.flatMap((item, index) => (isObject(item) ? [{ item, index }] : []))
+    : [];
 
 export const visualisationOf = (ext: Loose): Loose | undefined =>
   isObject(ext.visualisation) ? ext.visualisation : undefined;
 
-/** A contribution list and the property that identifies its entries. */
+/** Printable form of an identifier, even for values without `toString`. */
+export const describe = (value: unknown): string => {
+  if (value === undefined || value === null) return '';
+  try {
+    return String(value);
+  } catch {
+    return '[object]';
+  }
+};
+
+export type FieldKind = 'string' | 'function' | 'array';
+
+/** A contribution list, the property that identifies its entries, and its required fields. */
 export interface ListSpec {
   readonly label: string;
   readonly key: string;
+  readonly fields: Readonly<Record<string, FieldKind>>;
   pick(ext: Loose): unknown;
 }
 
-const topLevel = (name: string, key: string): ListSpec => ({
-  label: name,
-  key,
-  pick: (ext) => ext[name],
-});
+const topLevel = (
+  name: string,
+  key: string,
+  fields: ListSpec['fields'],
+): ListSpec => ({ label: name, key, fields, pick: (ext) => ext[name] });
 
-const nested = (name: string, key: string): ListSpec => ({
+const nested = (
+  name: string,
+  key: string,
+  fields: ListSpec['fields'],
+): ListSpec => ({
   label: `visualisation.${name}`,
   key,
+  fields,
   pick: (ext) => visualisationOf(ext)?.[name],
 });
 
 export const LIST_SPECS: readonly ListSpec[] = [
-  topLevel('routes', 'path'),
-  topLevel('navigation', 'path'),
-  topLevel('digitalTwinTabs', 'id'),
-  topLevel('assetPreviews', 'id'),
-  nested('anchorKinds', 'kind'),
-  nested('converters', 'id'),
-  nested('presets', 'id'),
-  nested('scopes', 'id'),
-  nested('fieldKernels', 'id'),
-  nested('substrates', 'id'),
+  topLevel('routes', 'path', { path: 'string' }),
+  topLevel('navigation', 'path', { label: 'string', path: 'string' }),
+  topLevel('digitalTwinTabs', 'id', {
+    id: 'string',
+    label: 'string',
+    applies: 'function',
+  }),
+  topLevel('assetPreviews', 'id', { id: 'string' }),
+  nested('anchorKinds', 'kind', {
+    kind: 'string',
+    substrates: 'array',
+    resolve: 'function',
+  }),
+  nested('converters', 'id', { id: 'string', from: 'array', to: 'string' }),
+  nested('presets', 'id', { id: 'string', substrate: 'string' }),
+  nested('scopes', 'id', { id: 'string', label: 'string', group: 'function' }),
+  nested('fieldKernels', 'id', { id: 'string' }),
+  nested('substrates', 'id', { id: 'string', supports: 'array' }),
 ];
 
 export const listSpec = (label: string): ListSpec =>
   LIST_SPECS.find((spec) => spec.label === label) as ListSpec;
 
 /** E.g. `routes[1] "detail"`. */
-export const entryLabel = (spec: ListSpec, item: Loose, index: number) =>
-  `${spec.label}[${index}] "${String(item[spec.key] ?? '')}"`;
+export const entryLabel = (spec: ListSpec, { item, index }: Entry) =>
+  `${spec.label}[${index}] "${describe(item[spec.key])}"`;

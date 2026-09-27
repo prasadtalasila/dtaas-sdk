@@ -38,6 +38,10 @@ const assetShape = z.object({
 
 type AssetShape = z.infer<typeof assetShape>;
 
+/** Own keys only: `toString` or `constructor` are not substrates. */
+const hasSubstrate = (asset: AssetShape, id: string) =>
+  Object.prototype.hasOwnProperty.call(asset.substrates, id);
+
 const unknownReference = (
   ctx: z.RefinementCtx,
   path: (string | number)[],
@@ -48,7 +52,7 @@ const unknownReference = (
 
 const checkPanes = (asset: AssetShape, ctx: z.RefinementCtx) => {
   asset.layout.panes.forEach((pane, i) => {
-    if (!(pane in asset.substrates)) {
+    if (!hasSubstrate(asset, pane)) {
       unknownReference(ctx, ['layout', 'panes', i], `substrate "${pane}"`);
     }
   });
@@ -56,7 +60,7 @@ const checkPanes = (asset: AssetShape, ctx: z.RefinementCtx) => {
 
 const checkBindings = (asset: AssetShape, ctx: z.RefinementCtx) => {
   asset.encodings.forEach((binding, i) => {
-    if (!(binding.substrate in asset.substrates)) {
+    if (!hasSubstrate(asset, binding.substrate)) {
       const what = `substrate "${binding.substrate}"`;
       unknownReference(ctx, ['encodings', i, 'substrate'], what);
     }
