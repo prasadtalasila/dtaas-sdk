@@ -9,6 +9,15 @@ export {
   STANDARD_SUBSTRATES,
 } from 'src/extension/constants';
 
+// Extension helpers
+export { default as defineExtension } from 'src/extension/defineExtension';
+export { isLazyComponent, isLazyLoader } from 'src/extension/lazy';
+export { default as validateExtension } from 'src/extension/validateExtension';
+export type {
+  ValidateOptions,
+  ValidationResult,
+} from 'src/extension/validateExtension';
+
 // Extension contract
 export type {
   AssetPreview,
