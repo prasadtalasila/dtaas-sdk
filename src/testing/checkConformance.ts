@@ -6,7 +6,8 @@ import fakeHostServices, {
   type FakeHostOptions,
   type FakeHostServices,
 } from 'src/testing/fakeHostServices';
-import { collectMountables, mountOne } from 'src/testing/mountAll';
+import collectMountables from 'src/testing/collectMountables';
+import mountOne from 'src/testing/mountOne';
 import installSocketGuard from 'src/testing/socketGuard';
 
 export interface ConformanceOptions {

@@ -29,30 +29,33 @@ const issuesOf = (asset: unknown) => {
         .join('; ');
 };
 
+const createSubstrateRegistry = (
+  substrates: Readonly<Record<string, SubstrateAdapter>>,
+) => ({
+  list: () => Object.keys(substrates),
+  get: async (id: string) => {
+    const adapter = substrates[id];
+    if (!adapter) throw new Error(`Unknown substrate: ${id}`);
+    return adapter;
+  },
+});
+
 /** Stores `visualisation.json` assets per twin, validating like the host. */
 const createFakeViz = (
   options: FakeVizOptions = {},
   saved: RecordedSave[] = [],
 ): VizService => {
   const assets = new Map<string, VisualisationAsset>();
-  const substrates = options.substrates ?? {};
   return {
     anchorKinds: options.anchorKinds ?? [],
     presets: options.presets ?? [],
+    substrates: createSubstrateRegistry(options.substrates ?? {}),
     load: async (dt) => assets.get(dt.path) ?? null,
     save: async (dt, asset, saveOptions) => {
       const issues = issuesOf(asset);
       if (issues) throw new Error(`Invalid visualisation asset: ${issues}`);
       assets.set(dt.path, asset);
       saved.push({ dt, asset, options: saveOptions });
-    },
-    substrates: {
-      list: () => Object.keys(substrates),
-      get: async (id) => {
-        const adapter = substrates[id];
-        if (!adapter) throw new Error(`Unknown substrate: ${id}`);
-        return adapter;
-      },
     },
   };
 };

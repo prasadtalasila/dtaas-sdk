@@ -95,35 +95,40 @@ const createAuth = (user: User | null) => ({
   },
 });
 
+const createRecorded = (): Recorded => ({
+  snackbars: [],
+  logs: [],
+  commits: [],
+  mergeRequests: [],
+  savedAssets: [],
+});
+
+const createUi = (recorded: Recorded) => ({
+  Page: FakePage,
+  snackbar: (message: string, severity: SnackbarSeverity) => {
+    recorded.snackbars.push({ message, severity });
+  },
+});
+
+const createSettings = (settings: Readonly<Record<string, unknown>> = {}) => ({
+  get: <T>(key: string) => settings[key] as T | undefined,
+});
+
 /** A complete, in-memory `HostServices` for testing a kit without DTaaS. */
 const fakeHostServices = (options: FakeHostOptions = {}): FakeHostServices => {
-  const recorded: Recorded = {
-    snackbars: [],
-    logs: [],
-    commits: [],
-    mergeRequests: [],
-    savedAssets: [],
-  };
-  const settings = options.settings ?? {};
+  const recorded = createRecorded();
+  const user = options.user === undefined ? { username: 'user' } : options.user;
+  const { now, entities } = options;
   return {
-    auth: createAuth(
-      options.user === undefined ? { username: 'user' } : options.user,
-    ),
+    auth: createAuth(user),
     library: createLibrary(options.baseUrl ?? 'https://dtaas.example/lib'),
     contents: createMemoryContents(options.files),
     git: createMemoryGit(recorded),
-    signals: createFakeSignals({
-      now: options.now,
-      entities: options.entities,
-    }),
+    signals: createFakeSignals({ now, entities }),
     viz: createFakeViz(options.viz, recorded.savedAssets),
-    ui: {
-      snackbar: (message, severity) =>
-        recorded.snackbars.push({ message, severity }),
-      Page: FakePage,
-    },
+    ui: createUi(recorded),
     logger: createLogger(recorded),
-    settings: { get: <T>(key: string) => settings[key] as T | undefined },
+    settings: createSettings(options.settings),
     config: createConfig(options.extensionId ?? 'test', options.env ?? {}),
     recorded,
     ...options.overrides,

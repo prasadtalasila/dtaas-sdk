@@ -75,30 +75,19 @@ const useHostType = (host: HostServices, fake: FakeHostServices) => [host, fake]
 export default [ext, encodingSchema, kitConfig, useHostType];
 `;
 
+const TSC_OPTIONS = [
+  ['--noEmit', '--strict', '--skipLibCheck'],
+  ['--module', 'esnext', '--moduleResolution', 'bundler', '--target', 'es2019'],
+  ['--jsx', 'react-jsx', '--types', 'react'],
+].flat();
+
 const typeCheckConsumer = (directory, name) => {
   writeFileSync(join(directory, 'consumer.ts'), consumerSource(name));
   const tsc = resolve('node_modules/typescript/bin/tsc');
+  const typeRoots = ['--typeRoots', resolve('node_modules/@types')];
   execFileSync(
     process.execPath,
-    [
-      tsc,
-      '--noEmit',
-      '--strict',
-      '--skipLibCheck',
-      '--module',
-      'esnext',
-      '--moduleResolution',
-      'bundler',
-      '--target',
-      'es2019',
-      '--jsx',
-      'react-jsx',
-      '--types',
-      'react',
-      '--typeRoots',
-      resolve('node_modules/@types'),
-      'consumer.ts',
-    ],
+    [tsc, ...TSC_OPTIONS, ...typeRoots, 'consumer.ts'],
     { cwd: directory, stdio: 'inherit' },
   );
 };

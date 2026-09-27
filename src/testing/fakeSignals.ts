@@ -53,41 +53,60 @@ const createRegistry = (entities: readonly TbEntity[]) => ({
   },
 });
 
-/** An in-memory temporal store: what the common core provides to kits. */
-const createFakeSignals = (options: FakeSignalsOptions = {}): FakeSignals => {
+/** Samples in emission order, queried by path, channel and time. */
+const createSampleStore = () => {
   const all: SignalSample[] = [];
-  const subscriptions = new Set<Subscription>();
-  const playhead = createFakePlayhead(options.now ?? Date.now);
-  const matching = (paths: string[], channel: Channel) =>
+  const matching = (paths: readonly string[], channel: Channel) =>
     all.filter((s) => s.channel === channel && paths.includes(s.signalPath));
-  const deliver = (sample: SignalSample) =>
-    subscriptions.forEach((sub) => {
-      if (sub.channel === sample.channel && sub.paths.has(sample.signalPath)) {
-        sub.sink(sample);
-      }
-    });
   return {
-    playhead,
-    registry: createRegistry(options.entities ?? []),
-    samples: () => [...all],
-    emit: (...samples) => {
-      all.push(...samples);
-      samples.forEach(deliver);
-      playhead.notify();
-    },
-    subscribe: (paths, channel, sink) => {
-      const subscription = { paths: new Set(paths), channel, sink };
-      subscriptions.add(subscription);
-      return () => subscriptions.delete(subscription);
-    },
-    valueAt: (path, channel, t = playhead.get()) => {
+    all,
+    at: (path: string, channel: Channel, t: number) => {
       const found = latestAtOrBefore(matching([path], channel), t);
       return found && toSampled(found);
     },
-    range: async (paths, channel, from, to) =>
+    between: (paths: string[], channel: Channel, from: number, to: number) =>
       matching(paths, channel)
         .filter((s) => s.ts >= from && s.ts <= to)
         .sort((a, b) => a.ts - b.ts),
+  };
+};
+
+const createSubscriptions = () => {
+  const subscriptions = new Set<Subscription>();
+  return {
+    add: (paths: string[], channel: Channel, sink: SignalSink) => {
+      const subscription = { paths: new Set(paths), channel, sink };
+      subscriptions.add(subscription);
+      return () => {
+        subscriptions.delete(subscription);
+      };
+    },
+    deliver: (sample: SignalSample) =>
+      subscriptions.forEach(({ paths, channel, sink }) => {
+        if (channel === sample.channel && paths.has(sample.signalPath)) {
+          sink(sample);
+        }
+      }),
+  };
+};
+
+/** An in-memory temporal store: what the common core provides to kits. */
+const createFakeSignals = (options: FakeSignalsOptions = {}): FakeSignals => {
+  const store = createSampleStore();
+  const subscriptions = createSubscriptions();
+  const playhead = createFakePlayhead(options.now ?? Date.now);
+  return {
+    playhead,
+    registry: createRegistry(options.entities ?? []),
+    samples: () => [...store.all],
+    emit: (...samples) => {
+      store.all.push(...samples);
+      samples.forEach(subscriptions.deliver);
+      playhead.notify();
+    },
+    subscribe: subscriptions.add,
+    valueAt: (path, channel, t = playhead.get()) => store.at(path, channel, t),
+    range: async (...args) => store.between(...args),
   };
 };
 
