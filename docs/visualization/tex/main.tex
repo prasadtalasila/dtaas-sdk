@@ -1,0 +1,66 @@
+%==============================================================================
+%  A Visualisation Layer for Web-Based Digital Twin Platforms
+%  Techniques, Architecture and an Implementation Plan for DTaaS
+%
+%  Build:  pdflatex main && bibtex main && pdflatex main && pdflatex main
+%  (or: latexmk -pdf main.tex)
+%==============================================================================
+\documentclass[11pt,a4paper]{article}
+
+\input{preamble}
+
+\title{\bfseries A Visualisation Layer for Web-Based\\ Digital Twin Platforms\\[0.3em]
+\large Problem, Solution Architecture, Techniques, Open-Source Packages\\
+and an Implementation Plan for the DTaaS Client}
+
+\author{Prepared for the INTO-CPS Association \\ Digital Twin as a Service (DTaaS) project}
+
+\date{13 September 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+\noindent
+The DTaaS web client has no spatial visualisation capability: it is a React~19 / Vite
+application whose dependency set contains no 3D, image-overlay or
+scientific-visualisation library. Any digital twin (DT) with a spatial subject can be
+executed, stored and logged on the platform, but seen only as a time series. This report
+states the problem (\S\ref{sec:problem}), proposes a layered architecture in which the
+\emph{binding layer} --- not the renderer --- is the reusable asset
+(\S\ref{sec:architecture}), catalogues fourteen visualisation techniques mapped onto the
+domains DTaaS serves (\S\ref{sec:techniques}), names an open-source package for each with
+version and licence (\S\ref{sec:packages}), and sets out a phased plan for a React
+component package, \pkg{@dtaas/visualisation} (\S\ref{sec:implementation}).
+
+Three claims organise it. First, such a package must not be a renderer: renderers are
+domain-specific and short-lived, whereas anchor resolution, the temporal state store and
+the encoding vocabulary are durable. Second, a 3D scene is one \emph{substrate} among
+several --- photographs and live video are equally legitimate places to put simulation
+output, and are what many users ask for first. Third, roughly a third of what such a
+layer normally builds is already deployed: \pkg{dtaas-services} provides RabbitMQ (AMQP
+and MQTT from one broker), InfluxDB, ThingsBoard, Grafana, MongoDB and GitLab, and the
+client already ships \pkg{@gitbeaker/rest} and \pkg{react-iframe}. The plan consumes
+those rather than duplicating them, and makes visualisation an additional DTaaS library
+asset type so a configuration can be authored, versioned in Git, reviewed as a merge
+request, shared and reused exactly as any other DT asset is.
+\end{abstract}
+
+\input{01-introduction}
+\input{02-problem}
+\input{03-architecture}
+\input{04-techniques}
+\input{05-packages}
+\input{06-implementation}
+\input{07-evaluation}
+\input{08-conclusion}
+
+\appendix
+\input{09-appendix}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,75 @@
+\section{Open-Source Packages}
+\label{sec:packages}
+
+Versions and licences verified against the npm registry and the GitHub API on 12--13
+September 2026.
+
+\begin{longtable}{@{}L{0.8cm}L{4.6cm}L{2.0cm}L{1.8cm}L{5.0cm}@{}}
+\caption{Recommended package per technique (abridged).}\label{tab:packages}\\
+\toprule
+\textbf{ID} & \textbf{Package} & \textbf{Version} & \textbf{Licence} & \textbf{Role} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Package} & \textbf{Version} & \textbf{Licence} & \textbf{Role} \\
+\midrule
+\endhead
+T1 & \pkg{@thatopen/components} & 3.4.8 & MIT & IFC property sets, classifier, lookup \\
+T1 & \pkg{three-mesh-bvh} & 0.9.x & MIT & Fast picking; the inverse lookup \\
+T2 & \pkg{three.js InstancedMesh} & --- & MIT & Per-instance colour, one draw call \\
+T2 & \pkg{@thatopen/components-front} & 3.4.4 & MIT & Highlighter over fragments \\
+T3/T4 & \pkg{vtk.js} & 32.x & BSD-3 & Interpolation, volumes, contours, streamlines \\
+T3 & \pkg{deck.gl} & 9.4.0 & MIT & \texttt{HeatmapLayer}, plan-view equivalent \\
+T5 & \pkg{deck.gl} \texttt{TripsLayer} & 9.4.0 & MIT & Time-windowed paths \\
+T6 & \pkg{@reduxjs/toolkit} & 2.x & MIT & Playhead and control state (already present) \\
+T7 & \pkg{Spark} & current & MIT & Gaussian-splat renderer for three.js \\
+T7/T11 & \pkg{3DTilesRendererJS} & 0.4.x & Apache-2.0 & Streamed tiles and point clouds \\
+T9 & --- & --- & --- & \textbf{No package exists}; built on T2 + T6 \\
+T11 & \pkg{@thatopen/fragments} & 3.4.7 & MIT & Batched IFC, per-element addressing \\
+T12 & \pkg{@react-three/drei} & 10.x & MIT & \texttt{CameraControls.fitToBox} \\
+T13 & \pkg{react-konva} / \pkg{konva} & 19.2.7 / 10.5.0 & MIT & Glyph, polygon and label
+layer over a photograph \\
+T13 & \pkg{opencv-ts} (OpenCV.js) & 1.3.6 & MIT / Apache-2.0 & \texttt{findHomography},
+reprojection error \\
+T13 & \pkg{leaflet} + \pkg{react-leaflet} & 1.9.4 / 5.0.0 & BSD-2 / MIT &
+\texttt{CRS.Simple} for very large plans \\
+T14 & \pkg{hls.js} & 1.7.3 & Apache-2.0 & HLS where latency tolerance is seconds \\
+T14 & \pkg{MediaMTX} & --- & MIT & \emph{Server-side}: RTSP\,$\rightarrow$\,WebRTC/HLS
+gateway \\
+\bottomrule
+\end{longtable}
+
+\paragraph{Renderer verdicts.} \textbf{Adopt} \pkg{react-three-fiber}+\pkg{drei} (MIT)
+as \texttt{mesh}; \pkg{@thatopen/components} (MIT) as \texttt{aec} --- the only option
+whose core abstraction is ``elements with queryable properties'', which is exactly a
+telemetry binding, though it is on v3 and churns, so pin versions; \pkg{CesiumJS}
+(Apache-2.0) as \texttt{geo}; \pkg{vtk.js} (BSD-3) as \texttt{field}, in its own canvas
+with a synchronised camera. \textbf{Study but do not adopt} \pkg{iTwin.js} (MIT): the
+entire technique catalogue already built, but a heavy platform-shaped dependency --- its
+display-style / feature-override split is the cleanest model of the encode layer in
+existence. \textbf{Reconsider later} \pkg{@pascal-app/*} (MIT) if in-client twin
+\emph{authoring} is ever wanted. \textbf{Fallback} \pkg{@speckle/viewer} (Apache-2.0) if
+building geometry arrives from many CAD tools rather than as IFC. \textbf{Reject}
+\pkg{Babylon.js} (costs the R3F ecosystem, buys nothing), \pkg{GoJS} (2D and
+commercial); \pkg{foxglove/studio} is archived and closed.
+
+\paragraph{Transport and platform packages.} \pkg{mqtt} 5.x (MIT), \pkg{@stomp/stompjs}
+7.x (Apache-2.0), \pkg{@influxdata/influxdb-client} 1.35.0 (MIT),
+\pkg{@gitbeaker/rest} 43.8 (MIT, \emph{already shipped}), \pkg{react-iframe} 1.8.5 (MIT,
+\emph{already shipped}), \pkg{comlink} 4.4.2 (Apache-2.0), and the ThingsBoard WebSocket
+API, which needs no client library. Two of seven are already dependencies: the data
+plane is mostly configuration, not new dependency surface.
+
+\paragraph{Gaps and licence notes.} \tech{9} has no package and must be written --- about
+a day of shader and encoder work, but only \emph{after} \tech{2} and \tech{6} exist.
+\tech{8} has no maintained package (\pkg{three-projected-material} has not been pushed
+since July 2024; write the $\approx$80-line projective shader instead). \tech{13} has no
+integrated package: Konva draws, OpenCV solves, Leaflet pans, but nothing binds a live
+signal to an image region along a playhead. And nothing at all covers Layers~1--4, which
+is why they are the package's reason to exist. On licences: \pkg{xeokit-sdk} and
+\pkg{realvirtual WEB} are AGPL-3.0 and excluded --- though realvirtual's GLB-plus-signal
+wire format is worth studying; \pkg{Potree} and \pkg{loaders.gl} report
+\texttt{NOASSERTION} and need checking; \pkg{konva} and \pkg{hls.js} report
+\texttt{NOASSERTION} on GitHub while declaring MIT and Apache-2.0 on npm, so record the
+exception explicitly rather than letting a scanner fail the build.
+

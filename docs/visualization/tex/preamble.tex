@@ -1,0 +1,106 @@
+%------------------------------------------------------------------------------
+% Packages
+%------------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{textcomp}
+
+\usepackage[a4paper,margin=2.4cm,headheight=14pt]{geometry}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{natbib}
+\usepackage[hidelinks]{hyperref}
+
+%------------------------------------------------------------------------------
+% Colours
+%------------------------------------------------------------------------------
+\definecolor{dtblue}{HTML}{0F6C8A}
+\definecolor{dtamber}{HTML}{A4670F}
+\definecolor{dtrule}{HTML}{B4C3CB}
+\definecolor{dtgrey}{HTML}{4D606C}
+\definecolor{codebg}{HTML}{F2F5F7}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=dtblue,
+  citecolor=dtblue,
+  urlcolor=dtblue,
+  pdftitle={A Visualisation Layer for Web-Based Digital Twin Platforms},
+  pdfsubject={Techniques, architecture and implementation plan for the DTaaS client}
+}
+
+%------------------------------------------------------------------------------
+% Headers / footers
+%------------------------------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsc{DTaaS Visualisation Layer}}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+%------------------------------------------------------------------------------
+% Section styling
+%------------------------------------------------------------------------------
+\titleformat{\section}{\normalfont\Large\bfseries\color{dtblue}}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+
+%------------------------------------------------------------------------------
+% Listings
+%------------------------------------------------------------------------------
+\lstdefinestyle{ts}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{dtblue}\bfseries,
+  commentstyle=\color{dtgrey}\itshape,
+  stringstyle=\color{dtamber},
+  showstringspaces=false,
+  breaklines=true,
+  frame=leftline,
+  rulecolor=\color{dtrule},
+  framesep=6pt,
+  xleftmargin=8pt,
+  numbers=none,
+  tabsize=2,
+  morekeywords={interface,type,export,import,const,readonly,string,number,boolean,void,Promise,null,extends,implements,function,return,from,as}
+}
+\lstset{style=ts}
+
+%------------------------------------------------------------------------------
+% Table helpers
+%------------------------------------------------------------------------------
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\newcommand{\pkg}[1]{\texttt{#1}}
+% Breakable typewriter text, for long file names in narrow table columns
+\newcommand{\fn}[1]{{\footnotesize\path{#1}}}
+\newcommand{\tech}[1]{\textbf{T#1}}
+\newcommand{\req}[1]{\textbf{R#1}}
+
+% Callout box
+\newenvironment{keypoint}
+  {\par\vspace{0.5em}\noindent\begin{tabular}{@{}p{0.3em}@{\hspace{0.8em}}p{0.92\linewidth}@{}}
+   \cellcolor{dtamber} & \itshape}
+  {\end{tabular}\par\vspace{0.5em}}
+
+\setlist[itemize]{itemsep=2pt, topsep=4pt}
+\setlist[enumerate]{itemsep=2pt, topsep=4pt}
+
+\captionsetup{font=small, labelfont={bf,color=dtblue}}

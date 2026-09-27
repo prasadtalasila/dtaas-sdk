@@ -1,0 +1,58 @@
+\section{Introduction}
+\label{sec:intro}
+
+Digital Twin as a Service (DTaaS) is a platform for the creation, execution and sharing
+of digital twins, owned by the INTO-CPS Association~\citep{talasila2024composable}. Its
+monorepo comprises a React web client, library, runner and logger microservices, and the
+\pkg{dtaas-services} service manager. Its defining idea is \emph{composability}: a twin
+is assembled from reusable library assets --- data, models, functions and tools ---
+selected in the client and executed by the runner.
+
+Three existing capabilities change what a visualisation layer must build rather than
+simply use. \textbf{A full data stack}: \pkg{dtaas-services} installs, in TLS mode,
+InfluxDB, Grafana, RabbitMQ as an AMQP broker \emph{with its MQTT plugin enabled} --- so
+one broker serves both protocols --- MongoDB, ThingsBoard (IoT device management, with a
+PostgreSQL backend) and GitLab as OAuth2 identity provider and Git repository service.
+\textbf{Git in the browser}: the client already depends on \pkg{@gitbeaker/rest}~43.8, so
+it can read \emph{and write} repository files under the same OAuth2 session, meaning
+versioned persistence needs no new backend. \textbf{Real Linux workspaces}: each user
+gets a container exposing Jupyter, VS~Code, \pkg{ungit} and an xfce desktop over VNC
+\emph{in the browser}, embedded through \pkg{react-iframe}; files a twin execution
+produces are addressable by URL.
+
+Against that, the client's own dependencies are React~19.2, Vite~8, TypeScript~6, MUI~9,
+Redux Toolkit~2, React Router~7 and Monaco, with routes for \texttt{account},
+\texttt{auth}, \texttt{config}, \texttt{digitaltwins}, \texttt{library},
+\texttt{measurement} and \texttt{workbench} --- and \emph{no} 3D, image-overlay or
+scientific-visualisation dependency at all.
+
+\paragraph{Goal.} A reusable React component package, \pkg{@dtaas/visualisation}, that
+(a) accepts visual substrates from arbitrary URLs --- 3D assets, photographs, floor plans
+and live video --- including assets served by the library microservice, GitLab or a
+workspace; (b) drives their visual state from heterogeneous live streams, reusing the
+brokers and databases already deployed; (c) serves several domains (city, machines,
+buildings, hospitals, and the marine and mobility domains evidenced in the literature
+reviewed) without a rebuild for each; and (d) couples \emph{simulated} to
+\emph{measured} state in a single view --- the capability that distinguishes a digital
+twin from a monitoring dashboard.
+
+\paragraph{Two requirements that are easy to under-weight.} A large share of what users
+ask for is not a 3D model. They have a \emph{photograph} --- a traffic camera still, a
+room, a plant floor, a scanned plan --- and want simulation and live readings drawn on
+it, correctly placed (technique \tech{13}). Where a camera exists they want the
+\emph{live feed beside the simulation}, moving together in time, so divergence is
+directly observable (technique \tech{14}). Both are treated here as first-class
+substrates, which shapes the architecture in Section~\ref{sec:architecture}.
+
+\paragraph{Out of scope.} Dashboarding, which Grafana and ThingsBoard already do well ---
+the right move is to \emph{drive} them from the same clock, not rebuild them. And asset
+authoring: the package consumes substrates. The exceptions are binding authoring and
+image registration, because both bind a signal to a location and no external tool can do
+that for us.
+
+\paragraph{Sources.} This report consolidates a survey of commercial platforms (Autodesk
+Tandem and Platform Services, AWS IoT TwinMaker, Bentley iTwin.js, Samsara, NVIDIA
+Omniverse/OpenUSD); an audit of open-source packages with versions and licences verified
+against the npm registry and GitHub API on 12--13 September 2026; and eight peer-reviewed
+papers supplied in \texttt{sources/}. Appendix~\ref{app:sources} records provenance,
+including three supplied files that are failed downloads rather than papers.

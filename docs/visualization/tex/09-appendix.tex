@@ -1,0 +1,74 @@
+\section{Source Provenance and Licence Register}
+\label{app:sources}
+
+\subsection{Supplied sources}
+
+Eight of the eleven files in \texttt{sources/} are papers and were text-extracted
+successfully: \citet{yang2024digital} (\emph{Digital Twins in Construction}, Buildings
+14(9):2616); \citet{ali2024spatial} (\emph{Spatial Digital Twins}, PFG 92:761--778);
+\citet{vasilijevic2024trondheim} (\emph{A Digital Twin of the Trondheim Fjord}, JMSE
+12(9):1530); \citet{chen2024tangible} (\emph{Tangible digital twin with shared
+visualization for collaborative air traffic management operations}, Transportation
+Research Part~C); \citet{liao2025digital} (\emph{An augmented reality-enabled digital
+twin system for reconfigurable soft robots}, Computers in Industry);
+\citet{rundel2023leveraging} (\emph{Leveraging digital twin and game-engine for traffic
+simulations and visualizations}, Frontiers in Virtual Reality 4:1048753); and
+\citet{mobilitydt2023} (\emph{Visualization of Mobility Digital Twin}, IEEE).
+
+Three caveats are recorded rather than hidden. \fn{1-s2.0-S0278612525000834-main.pdf}
+uses CID-encoded embedded fonts and could not be text-extracted by either the direct
+extractor or Word conversion; it is identified from metadata as \citet{iiot2025llm} and
+\emph{nothing in this report relies on its content}. And \fn{dam-visualisation.pdf},
+\fn{main.pdf} and \fn{main-2.pdf} (each $\approx$61~KB) are \textbf{not papers} --- each
+is a saved ScienceDirect ``JavaScript is disabled / Request Verification'' error page.
+
+\begin{keypoint}
+If \fn{dam-visualisation.pdf} was meant to contribute a dam or hydraulic-structure case
+study --- a domain not otherwise covered --- it should be re-downloaded and this report
+extended, since that domain would exercise \tech{4} and \tech{5} heavily.
+\end{keypoint}
+
+\subsection{Extraction and verification method}
+
+No LaTeX distribution, Python, Node.js or Poppler was available when the sources were
+read. PDF text was recovered with a purpose-written PowerShell routine that walks each
+file's stream objects, inflates \texttt{FlateDecode} payloads via
+\texttt{System.IO.Compression.DeflateStream}, and extracts text-showing operators
+(\texttt{Tj}, \texttt{TJ}) with PDF string-escape decoding. Inter-token spacing in the
+recovered text is imperfect but word content is faithful; quotations were re-spaced by
+hand and checked against context. Package versions and licences were read from the npm
+registry and the GitHub REST API on 12--13 September 2026; where the API reports
+\texttt{NOASSERTION} --- no determinable SPDX identifier --- that is stated rather than
+guessed.
+
+\subsection{Licence register}
+
+\begin{longtable}{@{}L{5.6cm}L{3.0cm}L{6.0cm}@{}}
+\toprule
+\textbf{Package} & \textbf{Licence} & \textbf{Status for DTaaS} \\
+\midrule
+\endhead
+\pkg{react-three-fiber}, \pkg{drei}, \pkg{three.js}, \pkg{three-mesh-bvh} & MIT & Clear \\
+\pkg{@thatopen/components}, \pkg{-front}, \pkg{fragments} & MIT & Clear \\
+\pkg{deck.gl}, \pkg{Spark}, \pkg{SuperSplat} & MIT & Clear \\
+\pkg{iTwin.js}, \pkg{@pascal-app/*} & MIT & Clear; not adopted (see
+\S\ref{sec:packages}) \\
+\pkg{react-konva}, \pkg{react-leaflet}, \pkg{opencv-ts} & MIT & Clear \\
+\pkg{mqtt}, \pkg{@influxdata/influxdb-client} & MIT & Clear \\
+\pkg{@gitbeaker/rest}, \pkg{react-iframe} & MIT & Clear; already client dependencies \\
+\pkg{MediaMTX} & MIT & Clear; deployment component, not a client dependency \\
+\pkg{CesiumJS}, \pkg{3DTilesRendererJS} & Apache-2.0 & Clear \\
+\pkg{@speckle/viewer}, \pkg{@stomp/stompjs}, \pkg{comlink} & Apache-2.0 & Clear \\
+OpenCV (behind \pkg{opencv-ts}) & Apache-2.0 & Clear \\
+\pkg{vtk.js} & BSD-3-Clause & Clear \\
+\pkg{leaflet} & BSD-2-Clause & Clear \\
+\pkg{konva} & MIT (npm); \texttt{NOASSERTION} (GitHub) & Clear; record as a CI
+exception \\
+\pkg{hls.js} & Apache-2.0 (npm); \texttt{NOASSERTION} (GitHub) & Clear; record as a CI
+exception \\
+\pkg{Potree}, \pkg{loaders.gl} & \texttt{NOASSERTION} & \textbf{Check before use} \\
+\pkg{xeokit-sdk}, \pkg{realvirtual WEB} & \textbf{AGPL-3.0} & \textbf{Excluded} ---
+network copyleft \\
+\pkg{GoJS} & Commercial & \textbf{Excluded} \\
+\bottomrule
+\end{longtable}

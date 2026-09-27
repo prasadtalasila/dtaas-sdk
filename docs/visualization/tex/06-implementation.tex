@@ -1,0 +1,87 @@
+\section{Implementation Plan}
+\label{sec:implementation}
+
+The deliverable is a standalone npm package,
+\pkg{@into-cps-association/dtaas-visualisation}, published beside the other DTaaS
+packages. Standalone publication is deliberate: it forces the binding layer to be
+independent of the client's routing, authentication and MUI theme, which is what makes
+it reusable by other web-based DT platforms and testable without spinning up DTaaS.
+Effort assumes one developer at $\approx$0.6~FTE; figures are planning estimates.
+
+\begin{longtable}{@{}L{1.9cm}L{4.6cm}L{1.9cm}L{6.4cm}@{}}
+\caption{Phases.}\label{tab:phases}\\
+\toprule
+\textbf{Phase} & \textbf{Deliverable} & \textbf{Techniques} & \textbf{Exit criterion} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Phase} & \textbf{Deliverable} & \textbf{Techniques} & \textbf{Exit criterion} \\
+\midrule
+\endhead
+\textbf{0} \newline 3 weeks & Layers 1--4 against the installed stack; \emph{no
+substrate at all} & --- & Fixture replay emits the correct resolved encodings over a
+scrubbed range, with no canvas on screen. If that is testable, \req{1} holds. \\
+\addlinespace
+\textbf{1} \newline 3 weeks & \texttt{image} adapter, calibration UI, Grafana embed &
+T13, T10 & Live MQTT values drawn on a traffic or room photograph; scrub moves the
+embedded Grafana panel. No 3D in the build. \\
+\addlinespace
+\textbf{2} \newline 4 weeks & \texttt{aec} adapter; ThingsBoard registry import & T1,
+T2, T11 & A real building or hospital-floor twin recolouring by measured value through
+the same binding layer. \\
+\addlinespace
+\textbf{3} \newline 2 weeks & Library asset type; binding editor committing via
+gitbeaker & T12 & A second user reuses the asset by swapping substrate and anchors; a
+threshold change lands as a merge request. \\
+\addlinespace
+\textbf{4} \newline 4 weeks & Replay over InfluxDB; ghost twin; \texttt{mesh} adapter &
+T6, T9 & Scrubbing moves geometry, image overlay, table and residual together;
+predicted and measured comparable in one frame. \\
+\addlinespace
+\textbf{5} \newline 3 weeks & \texttt{video} adapter; latency-offset control & T14, T8 &
+Camera and simulation on one clock with skew displayed, adjustable and persisted. \\
+\addlinespace
+\textbf{6} \newline 4--6 weeks & \texttt{geo} and \texttt{field} adapters
+(demand-driven) & T3, T4, T5, T7 & A georeferenced twin and a volumetric result render
+through the Phase-0 binding layer. \\
+\bottomrule
+\end{longtable}
+
+\begin{keypoint}
+Phase~0 is the phase most likely to be cut under schedule pressure and the one that must
+not be. Every later phase is cheap because of it, and neither the \texttt{channel} field
+nor the playhead can be retrofitted without touching every module written after them.
+\end{keypoint}
+
+\paragraph{Integration points in the client.} A \texttt{visualise} sub-route under
+\texttt{client/src/route/digitaltwins/}; \texttt{visualisation} registered as an asset
+type in \texttt{route/library/} and the composition cart; a ``show on substrate''
+affordance and shared playhead in \texttt{route/measurement/}; sibling VNC and web panes
+in \texttt{route/workbench/}; a \texttt{visualisationSlice} in \texttt{client/src/store/}
+holding playhead, connections, subscriptions, selection and layout --- with sample
+buffers outside Redux; extended gitbeaker access in \texttt{client/src/util/}; and MIME
+types plus range requests in \texttt{servers/lib}.
+
+\paragraph{Principal risks.} Two are specific to the new substrates and both are failure
+modes of \emph{credibility} rather than of code. \textbf{Homography error mistaken for
+model error}: show reprojection error at calibration time, store it with the homography,
+and refuse world-coordinate overlays above a threshold. \textbf{Video latency mistaken
+for divergence} (high likelihood, high impact): declare the offset per feed, display it,
+make it adjustable, and mark the pane ``unsynchronised'' when unknown. The others are
+ordinary: \pkg{@thatopen/*} API churn (pin versions; confine contact to the
+\texttt{aec} adapter); frame-rate collapse from per-sample Redux dispatch (buffers
+outside Redux from Phase~0; CI performance test at 60~Hz and $10^4$ elements); bundle
+size across seven adapters (lazy-load, CI size budget); InfluxDB query cost on wide
+scrubs (window-and-cache, downsample, never query per frame); anchor drift on
+re-export (persist \texttt{kind} and label, surface a repair UI on failure); licence
+contamination (CI allowlist); and privacy in hospital and public-space video (restricted
+channels, default off, documented lawful basis --- \citet{ali2024spatial} note location
+data alone can identify an individual).
+
+\paragraph{What to build first.} If one sentence survives contact with the schedule:
+\textbf{build the transport, the hot/cold time store and the \texttt{SubstrateAdapter}
+interface against the RabbitMQ and InfluxDB already deployed, then prove them on a
+photograph} --- not on a 3D model. That route reaches a user-recognisable result in
+about six weeks, needs no WebGL, exercises every layer the 3D substrates will later
+reuse, and leaves a fallback view for every twin that never acquires a model.
+

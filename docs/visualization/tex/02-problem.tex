@@ -1,0 +1,117 @@
+\section{Problem}
+\label{sec:problem}
+
+\begin{quote}\itshape
+A web-based DT platform must render arbitrary visual substrates --- 3D assets,
+photographs and live video --- loaded from arbitrary URLs, driven by heterogeneous live
+data streams, across unrelated application domains, without rebuilding the stack each
+time a new domain or medium appears. No open-source package solves this: every candidate
+solves one domain deeply or all domains shallowly, and almost none treat an image or a
+video feed as a legitimate place to put simulation output.
+\end{quote}
+
+\subsection{Six difficulties}
+
+\textbf{P1 Domain rebuild.} 3D libraries are domain-shaped --- a BIM viewer models
+storeys and IFC property sets, a geospatial engine models tiles and terrain, a robotics
+viewer models joints. Serving four domains means either one poor fit in three of them or
+four integrations to maintain. \citet{rundel2023leveraging} report the same pressure at
+city scale: operational city DTs with simulation (Virtual Singapore, Herrenberg) were
+\emph{impracticable} for small municipalities --- Virtual Singapore alone exceeded
+USD~73~million over five years --- and their answer was procedural generation from
+existing public geodata rather than bespoke authoring. The lesson generalises: derive
+the scene from data that already exists.
+
+\textbf{P2 Anchoring.} Something must connect a signal to a location. TwinMaker binds
+entity/component/property onto a GLB submodel; iTwin.js keys on Element~ID; Tandem
+classifies assets explicitly. All three \emph{author} the link and persist it; runtime
+inference from coordinates or names breaks on re-export. DTaaS has an advantage here:
+ThingsBoard already holds a device and asset registry, so the anchor namespace need not
+be invented.
+
+\textbf{P3 Sustained update.} Applying an encoding once is trivial; applying it to
+$10^4$--$10^6$ elements at 10--60~Hz without rebuilding the scene graph is not. This
+constrains technique choice far more than aesthetics.
+
+\textbf{P4 Heterogeneity.} \citet{ali2024spatial} name this as open research: combining
+3D geometry, time series and map layers legibly, and visualising correlations across
+space and time, ``needs more research''. Part of the problem is genuinely unsolved, not
+merely unbuilt.
+
+\textbf{P5 Simulation coupling.} The problem commercial platforms serve worst. Tandem,
+TwinMaker and Samsara visualise \emph{measurement} at high polish; simulation lives in
+another tool with another viewer. Yet the residual between predicted and measured state
+is the high-value signal, because it represents a physics violation rather than a
+statistical oddity. \citet{liao2025digital} co-visualise sensed and simulated
+deformation of a soft robot in one AR scene, reporting errors of 0--7.14\%.
+
+\textbf{P6 Substrate plurality.} Most libraries assume the answer is a 3D scene. In
+practice a large share of requests are a \emph{photograph} (traffic still, room, plant
+floor, scanned plan) on which simulation should be drawn; a \emph{live video feed} to be
+shown beside the simulation; or a \emph{rendered output file} from a workspace execution
+that needs only placing and time-aligning. Treating these as second-class leaves the
+visualisation layer unusable until someone commissions a 3D model.
+
+\begin{keypoint}
+DTaaS is unusually placed on P5: its INTO-CPS lineage means FMI co-simulation already
+produces the predicted channel every surveyed commercial platform lacks, and InfluxDB
+already provides somewhere to put both channels. The cost of exploiting this is small
+\emph{provided} measured and simulated state are two channels of one signal from the
+start.
+\end{keypoint}
+
+\subsection{Why the obvious approaches fail}
+
+\textbf{One 3D library} fails on P1 and P6. Pascal (\pkg{@pascal-app/*}, MIT) gives a
+full architectural editor but its document model is sites\,$\rightarrow$\,buildings\,%
+$\rightarrow$\,levels\,$\rightarrow$\,walls, in which a pump, a fjord or a photograph is
+not a citizen, and its viewer exposes no live-data binding. \pkg{@thatopen/components}
+has the best data semantics of any BIM option and is likewise BIM-shaped. CesiumJS is
+decisive at city scale and clumsy for one machine. \textbf{Everything on three.js} fails
+on effort, and is the wrong tool for annotating a JPEG. \textbf{A game engine} works ---
+\citet{rundel2023leveraging} use Unity+SUMO via TraCI, \citet{vasilijevic2024trondheim}
+Unity+Cesium --- but produces an artefact hosted and versioned outside the platform; its
+proper home in DTaaS is the workspace desktop (\S\ref{sec:workspace}).
+\textbf{Grafana and ThingsBoard alone} solve charting completely and the spatial problem
+not at all. \textbf{A commercial platform} does not solve P5, and only iTwin.js (MIT) is
+installable.
+
+\subsection{Requirements}
+
+\begin{longtable}{@{}L{1.1cm}L{13.4cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Requirement} \\
+\midrule
+\endhead
+\req{1} & \textbf{Substrate independence.} Adding a domain or a medium means adding an
+adapter behind a stable interface, not forking the package. \\
+\req{2} & \textbf{Authored anchoring.} Signal-to-location bindings are explicit,
+persisted, versionable and human-editable. \\
+\req{3} & \textbf{Transport agnosticism.} MQTT and AMQP (both via the installed
+RabbitMQ), ThingsBoard telemetry, InfluxDB, SQL, HTTP and files normalise to one stream
+shape. \\
+\req{4} & \textbf{Temporal addressing.} Every encoding reads state at a playhead, never
+``latest value''. \\
+\req{5} & \textbf{Dual-channel state.} Measured and simulated values of one signal are
+first-class and separately addressable. \\
+\req{6} & \textbf{Sustained update.} $O(\text{changed elements})$ per frame, no
+scene-graph rebuild. \\
+\req{7} & \textbf{Composability as a DTaaS asset.} A visualisation is storable in the
+library, selectable in composition, shareable between users. \\
+\req{8} & \textbf{Licence cleanliness.} MIT, Apache-2.0 or BSD only; network copyleft is
+disqualifying for a platform client. \\
+\req{9} & \textbf{Graceful degradation.} A twin with no 3D asset still gets a usable
+view; a browser without WebGPU still renders. \\
+\req{10} & \textbf{Reuse of the installed stack.} Consume InfluxDB, RabbitMQ,
+ThingsBoard, Grafana and GitLab as deployed; no parallel broker, historian, dashboard or
+file store. \\
+\req{11} & \textbf{Media synchronisation.} Where video and simulation are shown
+together, their time alignment is explicit, measurable and correctable. \\
+\bottomrule
+\end{longtable}
+
+\noindent
+\req{8} eliminates \pkg{xeokit-sdk} and \pkg{realvirtual WEB} (both AGPL-3.0) and flags
+\pkg{Potree} and \pkg{loaders.gl} (\texttt{NOASSERTION}) for checking. \req{10} is what
+most changes the plan relative to a greenfield design.
+

@@ -1,0 +1,138 @@
+\section{Visualisation Techniques by Domain}
+\label{sec:techniques}
+
+Fourteen techniques, ordered by depth of coupling between physical asset, simulation and
+live stream. \tech{1}--\tech{12} apply mainly to geometric substrates; \tech{13} and
+\tech{14} cover image and video.
+
+\begin{description}[leftmargin=1.55cm, style=nextline, itemsep=3pt, font=\bfseries\color{dtblue}]
+
+\item[T1 Semantic anchoring] Bind \texttt{signalPath}\,$\rightarrow$\,element using
+identifiers already in the model. Everything downstream is a lookup on this map; the
+inverse lookup (picking) makes the scene interrogable. \emph{All domains ---
+precondition, not option.}
+
+\item[T2 Feature overrides] Recolour, fade or hide individual elements via a per-element
+attribute read by one shared shader, keeping cost proportional to \emph{changed}
+elements. iTwin.js \texttt{FeatureOverrideProvider}; TwinMaker model shader.
+\textbf{Highest-leverage technique: \tech{3}, \tech{9} and \tech{12} all consume it.}
+
+\item[T3 Sparse-sensor field mapping] Twenty sensors, one continuous surface.
+Interpolate (IDW, RBF, nearest) into a texture sampled by the surface shader. The
+interpolation is the honest part and must expose its uncertainty. \emph{Hospitals,
+buildings, marine.}
+
+\item[T4 Volumetric simulation fields] CFD, thermal, acoustic or dispersion results as
+isosurfaces, cutting planes or ray-marched volumes registered to the sensor geometry.
+Absent from Tandem, TwinMaker and Samsara; central to
+\citet{vasilijevic2024trondheim}, who render OpenDrift and DREAM forecasts into the
+twin. \emph{Marine, city, buildings, machines.}
+
+\item[T5 Flow advection] Rate and direction as movement --- particles in a pipe, arrows
+in a duct, vehicles on a link. Distinguishes ``flowing slowly'' from ``stopped'', which
+a colour ramp cannot. TwinMaker ships it as the \emph{motion indicator}. \emph{Buildings,
+city, marine, machines.}
+
+\item[T6 4D replay] One clock drives geometry, appearance, camera and media; scrubbing
+moves the whole scene. iTwin.js \texttt{RenderSchedule}; Samsara fuses GPS, multi-camera
+video and sensors on one timeline where detected \emph{events}, not timestamps, are the
+navigation anchors. \emph{All; critical for machines and mobility.}
+
+\item[T7 Reality-capture fusion] Register as-built capture against as-designed model ---
+point clouds where geometry must be measurable, Gaussian splats where fidelity is the
+goal. \citet{mobilitydt2023} reconstruct vehicle geometry from crowdsourced imagery via
+NeRF precisely because authoring is ``labour-intensive and time-consuming'', and report
+PSNR falling 53--54\% outside ideal capture --- a caution against assuming capture
+quality. \emph{Buildings, city, mobility.}
+
+\item[T8 Video projection] Project a live feed onto the surfaces it sees, or lift
+detections out of video into the scene as entities. Samsara Site Visibility is this
+productised. \emph{Hospitals (privacy-constrained), machines, city.}
+
+\item[T9 Ghost twin / residual] Render simulated and measured state in one frame --- a
+translucent predicted pose against the measured one, or surfaces coloured by residual
+rather than value. Essentially unserved commercially; Omniverse comes closest via USD
+layers. Core to \citet{liao2025digital}. \textbf{Machines above all, and where DTaaS has
+a genuine advantage.}
+
+\item[T10 Linked abstraction levels] Schematic, plan, table and 3D as projections of one
+selection and one clock. \citet{ali2024spatial} identify the general case as open
+research. \emph{DTaaS shortcut: drive an embedded Grafana panel's \texttt{from}/%
+\texttt{to} from the playhead.}
+
+\item[T11 Streaming LOD] Hierarchical tiles, compression, per-element batching --- the
+precondition for everything else at real scale. \emph{City and buildings critically.}
+
+\item[T12 Attention routing] The scene navigates itself to the anomaly: camera frames
+the element, the rest drops to x-ray. Almost entirely rules plus camera interpolation.
+\emph{Hospitals and machines especially.}
+
+\item[T13 Image-substrate overlay] A photograph replaces the model; readings, simulated
+flows, queue lengths and predictions are drawn \emph{on the image} and animate with the
+playhead. Three tiers, and choosing the cheapest sufficient one is most of the skill:
+\textbf{(i) pixel anchoring} --- points and polygons in image coordinates, adequate
+when the question is ``what is the value \emph{here}''; \textbf{(ii) ground-plane
+homography} --- four image/world correspondences on a common plane yield a $3\times3$
+homography, which is what makes simulation output directly projectable (SUMO positions,
+crowd flow, predicted queue extent) in metres rather than pixels; \textbf{(iii) full
+camera pose} --- intrinsics plus extrinsics for true 3D overlay, worth it only when
+objects leave the ground plane. \emph{All domains; disproportionately valuable for city
+and mobility.}
+
+\item[T14 Live video beside simulation] Three arrangements: side-by-side on a shared
+clock (video seeked to $t$ minus a declared offset); overlaid, which is \tech{13} with a
+moving image; or a swipe divider between camera and matched-viewpoint render. The hard
+part is \emph{time}, not display: stream latency runs from hundreds of milliseconds
+(WebRTC) to seconds (HLS), so \req{11} demands the offset be declared, measurable and
+adjustable. A side-by-side view with unstated skew is worse than no view, because
+latency-induced divergence is indistinguishable from a wrong model. \emph{City,
+mobility, machines, marine.}
+
+\end{description}
+
+\begin{keypoint}
+\tech{13} should be built \emph{before} any 3D substrate. It exercises the whole binding
+layer at a fraction of the cost, satisfies \req{9} by giving every twin some usable
+view, and is what many users were asking for in the first place.
+\end{keypoint}
+
+\begin{longtable}{@{}L{0.8cm}L{4.0cm}C{1.6cm}C{1.6cm}C{1.6cm}C{1.6cm}C{1.6cm}@{}}
+\caption{Technique applicability by domain.}\label{tab:domains}\\
+\toprule
+\textbf{ID} & \textbf{Technique} & \textbf{Hospitals} & \textbf{Buildings} &
+\textbf{Machines} & \textbf{City/mob.} & \textbf{Marine} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Technique} & \textbf{Hospitals} & \textbf{Buildings} &
+\textbf{Machines} & \textbf{City/mob.} & \textbf{Marine} \\
+\midrule
+\endhead
+T1 & Semantic anchoring & Critical & Critical & Critical & Critical & Critical \\
+T2 & Feature overrides & Critical & Critical & High & High & Medium \\
+T3 & Surface field mapping & Critical & High & Low & Medium & High \\
+T4 & Volumetric sim.\ fields & Medium & High & High & High & Critical \\
+T5 & Flow advection & Medium & High & High & Critical & High \\
+T6 & 4D replay & High & High & Critical & Critical & High \\
+T7 & Reality-capture fusion & Medium & High & Medium & High & Medium \\
+T8 & Video projection & High & Low & High & High & Medium \\
+T9 & Ghost twin / residual & Medium & Medium & Critical & Medium & High \\
+T10 & Linked abstraction levels & High & Medium & High & High & High \\
+T11 & Streaming LOD & High & Critical & Low & Critical & Medium \\
+T12 & Attention routing & Critical & High & High & High & Medium \\
+T13 & Image-substrate overlay & High & High & High & Critical & Medium \\
+T14 & Live video + simulation & High & Low & High & Critical & High \\
+\bottomrule
+\end{longtable}
+
+\noindent
+Three readings matter. \textbf{Hospitals and buildings are one rendering problem}: both
+IFC-shaped, served by one adapter; what differs is data semantics, which lives in the
+anchor and encoding layers. \textbf{Machines are genuinely different} --- no BIM library
+helps with a pump or a robot cell --- but the scope is smaller because there is no
+semantic model to honour, and \tech{9} pays off most there. \textbf{City, mobility and
+marine share a renderer}, all georeferenced and leaning on \tech{4} and \tech{5}; both
+\citet{rundel2023leveraging} and \citet{vasilijevic2024trondheim} independently arrive at
+the same stack shape. And \tech{13} scores high in every column, because a photograph
+exists long before a model does.
+

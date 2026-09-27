@@ -1,0 +1,27 @@
+\section{Evaluation}
+\label{sec:evaluation}
+
+\citet{mobilitydt2023} separate \emph{fidelity} (precision independent of latency) from
+\emph{physical-to-digital synchronicity} (discrepancy caused by latency); the separation
+is the useful move, because the two trade against each other and one ``quality'' number
+hides the trade. Their own measurement makes the point: compressing offloaded imagery
+from $>18$~MB to $\approx6$~MB cost less than 0.1\% of PSNR while cutting latency
+substantially. The analogues here are \emph{encoding fidelity} (rendered property versus
+the encoding evaluated in the pure layer --- an automatable readback test) and
+\emph{synchronicity} (p50/p95/p99 publish-to-pixel latency at a stated element count).
+
+Three further measures follow from the new substrates and from \tech{9}.
+\textbf{Residual credibility}: report the residual's own error budget beside it, since a
+ghost twin showing 2\,\textdegree C divergence is useless if pipeline uncertainty is
+3\,\textdegree C --- \citet{liao2025digital} model this discipline with quantitative
+metrics rather than visual plausibility. \textbf{Registration accuracy}: homography
+reprojection error, expressed in ground-plane metres as well as pixels, because three
+pixels near the horizon of a traffic photograph can be several metres.
+\textbf{Synchronisation skew}: the signed video-frame-to-playhead difference, reported
+continuously since transport latency drifts; the question is not whether skew is zero
+but whether it is known, bounded and smaller than the phenomenon being compared. Finally,
+\citet{chen2024tangible} evaluate an MR airport digital tower with ten licensed
+controllers on workload, situational awareness and trust --- the right constructs for an
+operator-facing view, and not substitutable by usability, since a view can be easy to use
+and still degrade situational awareness by drawing attention to the wrong thing. All but
+the operator study belong in CI from the phase that introduces them.

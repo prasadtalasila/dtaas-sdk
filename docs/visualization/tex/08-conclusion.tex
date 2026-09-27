@@ -1,0 +1,52 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+\subsection{Findings}
+
+\begin{enumerate}[itemsep=2pt]
+  \item The DTaaS client has no spatial visualisation capability today beyond embedded
+        time series.
+  \item Every surveyed commercial platform shares one architecture --- anchor, encode,
+        sustain --- and sells a no-code editor over the encode layer.
+  \item The renderer is therefore the wrong thing to standardise on. Transport
+        normalisation, the temporal store, anchor resolution and the encoding vocabulary
+        are the durable artefacts, and none exist off the shelf.
+  \item Not every substrate is a 3D scene. Photographs and live video are first-class
+        places to put simulation output; generalising the adapter interface costs
+        nothing and changes what ships in the first two months.
+  \item Roughly a third of the layer is already deployed --- historian, broker, device
+        registry, charting, versioned storage and identity need to be \emph{used}, not
+        built.
+  \item Hospitals and buildings are one 3D problem, machines another, city/mobility/marine
+        a third: three geometric adapters plus \texttt{image}, \texttt{video} and
+        \texttt{embed}.
+  \item Simulation--measurement co-visualisation is open ground, and DTaaS is unusually
+        placed to take it.
+  \item One early decision governs half the catalogue: every encoding must read
+        \texttt{valueAt(playhead)}, never ``latest value''.
+  \item Licence discipline removes two of the strongest candidates
+        (\pkg{xeokit-sdk}, \pkg{realvirtual WEB}) and flags two more.
+\end{enumerate}
+
+\subsection{Positioning and next step}
+
+The literature converges on this architecture from several directions.
+\citet{rundel2023leveraging} show that the escape from domain-rebuild cost is to derive
+the scene from data that already exists --- and a photograph is data that already exists.
+\citet{vasilijevic2024trondheim} adopt a deliberately two-tier visualisation, Grafana for
+series and a game-engine/Cesium layer for geospatial rendering, which is almost exactly
+the split proposed here between the \texttt{embed} adapter and the geometric substrates,
+coupled through a shared clock rather than merged. \citet{ali2024spatial} caution that
+\tech{10} is not merely engineering. \citet{mobilitydt2023} supply the evaluation
+constructs and, by measuring how expensive geometry reconstruction is, the strongest
+argument for using imagery where it suffices. \citet{liao2025digital} demonstrate the
+ghost twin in miniature; \citet{chen2024tangible} supply the human-factors constructs and
+the case for shared, multi-operator views; and \citet{yang2024digital} identify data
+integration and quality, not rendering, as the binding constraint on DT adoption ---
+consistent with the claim that the binding layer is the product.
+
+\medskip
+\noindent\textbf{Next step.} Build Phase~0 against the services already running, then
+Phase~1 on a photograph. Six weeks to something a user recognises as their own twin, no
+WebGL required, and the whole binding layer proven before a single 3D asset is
+commissioned.

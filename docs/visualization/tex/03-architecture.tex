@@ -1,0 +1,263 @@
+\section{Solution Architecture}
+\label{sec:architecture}
+
+\subsection{The invariant beneath every surveyed platform}
+
+Strip the branding from Tandem, TwinMaker, iTwin.js and Omniverse and the same three
+layers appear. \textbf{Anchor}: a stable identifier tying a signal to a location on a
+substrate --- IFC GUID, glTF node, USD prim, Element~ID, or a point or polygon in image
+coordinates. \textbf{Encode}: a rule turning a value into a visual property --- colour,
+opacity, visibility, transform, flow speed, ghost offset, glyph, label; this is where
+commercial platforms put their product, and TwinMaker's no-code rule editor \emph{is}
+what customers pay for. \textbf{Sustain}: applying encodings continuously at scale
+without rebuilding the scene; iTwin.js devotes a native tile generator and a WebGL
+frontend to this layer alone.
+
+\begin{keypoint}
+The renderer is not in this list. It is an implementation detail of the \emph{sustain}
+layer. Treating it as the centre of the architecture is what makes a visualisation
+package domain-locked --- and what makes packages unable to treat a photograph or a
+video frame as a place where data can live.
+\end{keypoint}
+
+\subsection{Six layers}
+
+Layers~1--4 are domain- and substrate-independent and form the reusable core; layer~5 is
+a thin per-substrate adapter; layer~6 is third-party.
+
+\paragraph{Layer 1 --- Transport.} Every source normalises to one event shape, with
+optional historical backfill:
+
+\begin{lstlisting}
+export type Channel = 'measured' | 'simulated' | 'predicted' | 'setpoint';
+
+export interface SignalSample {
+  readonly twinId: string; readonly signalPath: string;   // "ward3/ahu1/supplyTemp"
+  readonly channel: Channel; readonly ts: number;         // epoch ms, source-assigned
+  readonly value: number | string | boolean | number[];
+  readonly quality?: 'good' | 'stale' | 'bad';
+}
+
+export interface TransportAdapter {
+  readonly id: string;
+  connect(cfg: unknown): Promise<void>;
+  subscribe(paths: string[], sink: (s: SignalSample) => void): () => void;
+  range?(paths: string[], from: number, to: number): Promise<SignalSample[]>;
+  disconnect(): Promise<void>;
+}
+\end{lstlisting}
+
+Adapters follow the installed stack, not a wish-list: MQTT over WSS and AMQP over
+Web-STOMP, both against the single RabbitMQ; ThingsBoard telemetry over its WebSocket
+API; InfluxDB for \texttt{range()}; SQL/HTTP for the logger and arbitrary DT endpoints;
+and a file adapter replaying CSV or Parquet from the library, GitLab or a workspace
+URL --- which makes the stack testable offline and lets an FMI output file serve as the
+\texttt{simulated} channel with no runtime integration.
+
+\paragraph{Layer 2 --- Temporal state store, hot and cold.} A ring buffer per
+\texttt{(signalPath, channel)} holds the live window; when the playhead moves outside
+it, the store issues an InfluxDB \texttt{range()} query and serves from the returned
+window. Every consumer calls \texttt{valueAt(path, channel, t)}, never ``current
+value''. This implements \req{4} and unlocks 4D replay (\tech{6}), residuals (\tech{9}),
+image-overlay replay (\tech{13}) and video sync (\tech{14}) at low marginal cost. The
+playhead, subscriptions and connection status belong in Redux Toolkit; the sample
+buffers deliberately do not, because dispatching an action per sample destroys frame
+rate.
+
+\begin{keypoint}
+Having InfluxDB deployed converts the time store from a hard problem into a cache.
+Without a historian, honest replay means holding everything in memory or building a
+backend; with one, it is a windowed query behind an interface the rest of the package
+cannot distinguish from live data.
+\end{keypoint}
+
+\paragraph{Layer 3 --- Anchor resolution.} Anchor kinds span three media, plus the
+imported registry:
+
+\begin{lstlisting}
+export type AnchorKind =
+  | 'ifc-guid' | 'gltf-node' | 'usd-prim' | 'instance-id'   // 3D substrates
+  | 'geo'                                                    // georeferenced
+  | 'image-point' | 'image-region' | 'image-plane'           // image substrates
+  | 'video-panel'                                            // video substrates
+  | 'tb-entity';                                             // ThingsBoard device/asset
+\end{lstlisting}
+
+An anchor carries \texttt{signalPath}, \texttt{kind}, \texttt{ref}, a human
+\texttt{label} and, for image substrates, the \texttt{homographyId} of the calibration
+that applies. \texttt{tb-entity} matters: because ThingsBoard holds the registry, an
+anchor can pair \emph{this device} with \emph{that IFC element}, so the signal namespace
+is imported rather than invented and a rename does not silently break the binding.
+
+\paragraph{Layer 4 --- Encoding rules.} Declarative, serialisable, and the genuinely
+reusable content of the package: \texttt{colorScale}, \texttt{visibility},
+\texttt{transform}, \texttt{flow}, \texttt{residual}, \texttt{ghost}, \texttt{label} and
+\texttt{attention} for geometric substrates; \texttt{glyph}, \texttt{regionFill},
+\texttt{fieldOverlay} and \texttt{trajectory} for image and video substrates. Because
+encodings are plain data, a complete visualisation is a JSON document --- which is what
+makes \req{7} achievable and, given \pkg{@gitbeaker/rest}, what makes it storable and
+reviewable with no new backend.
+
+\paragraph{Layer 5 --- Substrate adapters.} The seam that delivers \req{1}. Generalising
+from \emph{renderer} to \emph{substrate} is what admits images and video as peers of 3D:
+
+\begin{lstlisting}
+export interface SubstrateAdapter {
+  readonly id: string; readonly supports: AnchorKind[];
+  mount(container: HTMLElement, descriptor: SubstrateDescriptor): Promise<void>;
+  resolve(anchor: Anchor): ElementRef | null;
+  apply(ref: ElementRef, enc: ResolvedEncoding): void;   // hot path, must be O(1)
+  frame(ref: ElementRef, opts?: FrameOptions): void;
+  pick(x: number, y: number): ElementRef | null;
+  setTime(t: number): void;                              // media seek, animation
+  dispose(): void;
+}
+\end{lstlisting}
+
+\begin{longtable}{@{}L{1.9cm}L{5.2cm}L{7.4cm}@{}}
+\toprule
+\textbf{Adapter} & \textbf{Backing library} & \textbf{Substrate and domains} \\
+\midrule
+\endhead
+\texttt{image} & \pkg{react-konva}; \pkg{OpenCV.js} for calibration; \pkg{Leaflet}
+(\texttt{CRS.Simple}) for very large images & Photographs, floor plans, scanned
+drawings, rendered output frames. All domains; cheapest substrate, build first. \\
+\addlinespace
+\texttt{aec} & \pkg{@thatopen/components} + \pkg{@thatopen/fragments} & IFC models:
+hospitals, buildings, plants. \\
+\addlinespace
+\texttt{mesh} & \pkg{react-three-fiber} + \pkg{drei} (+ \pkg{urdf-loader}) & glTF
+assemblies: machines, robots, equipment. \\
+\addlinespace
+\texttt{video} & \texttt{HTMLVideoElement} + \pkg{hls.js} or WebRTC & Live and recorded
+camera feeds beside or beneath simulation output. \\
+\addlinespace
+\texttt{geo} & \pkg{CesiumJS} / \pkg{3DTilesRendererJS} (+ \pkg{deck.gl}) & City,
+mobility, marine; anything georeferenced or tiled. \\
+\addlinespace
+\texttt{field} & \pkg{vtk.js} & Simulation output: volumes, isosurfaces, streamlines.
+Own canvas, synchronised camera. \\
+\addlinespace
+\texttt{embed} & \pkg{react-iframe} & Grafana panels, ThingsBoard dashboards and the
+workspace VNC desktop, driven by the shared playhead. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Mapping onto the deployed DTaaS stack}
+\label{sec:stack}
+
+\begin{longtable}{@{}L{2.5cm}L{3.9cm}L{8.0cm}@{}}
+\toprule
+\textbf{Service} & \textbf{Role} & \textbf{How the package uses it} \\
+\midrule
+\endhead
+\textbf{RabbitMQ} & Live transport, AMQP + MQTT from one broker & Two Layer-1 adapters
+against one deployment: \pkg{mqtt.js} over WSS, \pkg{@stomp/stompjs} over Web-STOMP. No
+second broker. \\
+\addlinespace
+\textbf{InfluxDB} & Historian & Cold tier of the Layer-2 store via
+\pkg{@influxdata/influxdb-client}; makes \tech{6} and \tech{9} possible over arbitrary
+past windows. \\
+\addlinespace
+\textbf{ThingsBoard} & Device/asset registry; telemetry & Anchor namespace
+(\texttt{tb-entity}); a second live transport; dashboards embeddable. \\
+\addlinespace
+\textbf{Grafana} & Charting & \emph{Not} reimplemented. Embedded and driven by the
+shared playhead: the viewer writes the current window into the panel URL's
+\texttt{from}/\texttt{to}, so scrubbing the substrate moves the chart. \tech{10} for
+near-zero cost. \\
+\addlinespace
+\textbf{GitLab} & Versioned storage and identity & Visualisation assets, anchor maps and
+(via LFS) models and photographs read and written with \pkg{@gitbeaker/rest} under the
+existing OAuth2 session. A threshold change becomes a merge request. \\
+\addlinespace
+\textbf{MongoDB} & Document store & Optional: large generated anchor maps, per-user view
+state that should not pollute Git history. \\
+\addlinespace
+\textbf{Library / runner} & Files; DT execution & Resolves \texttt{lib://} substrates
+(needs MIME types for \texttt{.glb}, \texttt{.ifc}, \texttt{.frag}); produces the
+\texttt{simulated} channel and rendered frames. \\
+\bottomrule
+\end{longtable}
+
+\begin{keypoint}
+The highest-value integration in this table is the cheapest: driving an embedded Grafana
+panel from the visualisation playhead. It gives linked time-and-space navigation without
+writing a charting component, and respects the division of labour the marine DT pilot
+arrived at independently~\citep{vasilijevic2024trondheim}.
+\end{keypoint}
+
+\subsection{Persistence, the workspace, and composability}
+\label{sec:workspace}
+
+Because \pkg{@gitbeaker/rest} is already a client dependency and GitLab is already the
+identity provider, the visualisation asset needs no bespoke storage: the viewer reads
+\texttt{visualisation.json} and its substrate at a given ref, the binding editor commits
+changes back, review happens as a merge request diff, and large substrates live in Git
+LFS beside the configuration referencing them.
+
+Some visualisation will never happen in a browser canvas --- full CFD post-processing,
+ParaView, Blender, \texttt{rviz}, a Unity city build. All already run in the DTaaS
+workspace, whose xfce desktop is reachable over VNC inside the client. The architecture
+should embrace this on three conditions: the desktop mounts through the \texttt{embed}
+adapter like any other substrate; output files written to the workspace come back by URL
+and are consumed by the \texttt{image} or \texttt{mesh} adapter, so a heavyweight render
+becomes a navigable, time-aligned artefact for everyone else; and where a workspace tool
+cannot accept the client's playhead, the layout says the pane is independent rather than
+implying synchrony. This gives an honest answer to ``can DTaaS do proper scientific
+visualisation?'' --- yes, in the workspace --- without pretending the web layer will
+match ParaView.
+
+Finally, DTaaS already treats data, models, functions and tools as composable library
+assets. The consistent move is to add a \emph{visualisation} asset type, so a
+\texttt{visualisation.json} sits beside the models and functions of a twin and is picked
+in the same composition flow. An abbreviated example spanning three substrates:
+
+\begin{lstlisting}
+{ "schemaVersion": "1.1", "name": "junction-7-live",
+  "layout": { "type": "split", "panes": ["photo", "camera", "grafana"] },
+  "substrates": {
+    "photo":   { "adapter": "image", "source": "git://twins/junction7/junction7.jpg",
+                 "calibration": { "type": "homography", "id": "h1",
+                   "imagePoints": [[412,880],[1502,872],[1710,1040],[210,1050]],
+                   "worldPoints": [[0,0],[24,0],[24,12],[0,12]], "units": "m" } },
+    "camera":  { "adapter": "video", "source": ".../junction7/index.m3u8",
+                 "latencyHintMs": 2500 },
+    "grafana": { "adapter": "embed", "source": "https://grafana.example/d/abc/junction7",
+                 "timeParams": ["from", "to"] } },
+  "transports": [
+    { "adapter": "mqtt", "url": "wss://rabbitmq.example:15676/ws",
+      "topics": ["dtaas/junction7/+/count"], "channel": "measured" },
+    { "adapter": "influx", "org": "dtaas", "bucket": "junction7", "role": "history" },
+    { "adapter": "file", "url": "lib://data/junction7-sumo-out.csv",
+      "channel": "simulated" } ],
+  "anchors": [
+    { "signalPath": "junction7/armA/queueLen", "kind": "image-region",
+      "ref": "poly:armA", "homographyId": "h1", "label": "North arm queue" } ],
+  "encodings": [
+    { "target": "junction7/armA/queueLen", "substrate": "photo",
+      "encoding": { "type": "regionFill", "domain": [0,40], "scheme": "traffic" } },
+    { "target": "junction7/armA/queueLen", "substrate": "photo",
+      "encoding": { "type": "residual", "against": "simulated", "domain": [-8,8] } } ] }
+\end{lstlisting}
+
+A visualisation therefore becomes shareable (replace the photograph and the homography),
+reviewable (JSON in Git) and executable by the runner (a headless adapter emits the same
+overlay as an image file during a DT execution).
+
+\subsection{Design rules}
+
+\begin{enumerate}[itemsep=1pt]
+  \item The binding layer is the product; substrates are dependencies. Layers~1--4 must
+        import no rendering, imaging or media library --- enforce with a lint rule.
+  \item One clock. Scene, image overlay, video element and embedded Grafana panel all
+        sample the playhead.
+  \item Encodings are data. Anything expressible only as code is a gap in the
+        vocabulary.
+  \item Hot path outside Redux. Redux holds control state; per-frame sampling reads
+        buffers directly.
+  \item Reuse before build. If InfluxDB, RabbitMQ, ThingsBoard, Grafana or GitLab does
+        it, call it.
+  \item Every adapter lazily loaded. An image twin must never ship the BIM engine.
+\end{enumerate}
+

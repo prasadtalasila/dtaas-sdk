@@ -1,0 +1,12 @@
+/node_modules
+/dist
+/coverage
+*.tgz
+.env
+.DS_Store
+docs/visualization/tex/*.aux
+docs/visualization/tex/*.log
+docs/visualization/tex/*.bbl
+docs/visualization/tex/*.blg
+docs/visualization/tex/*.out
+docs/visualization/tex/*.toc
