@@ -32,7 +32,7 @@ Success criteria:
 | Topic | Decision |
 | --- | --- |
 | Location | Standalone repository `dtaas-sdk` |
-| Version | `1.0.0-alpha.1`; `sdk: 1` in each extension |
+| Version | npm `0.1.0`; contract revision `sdk: 1` in each extension (independent of the npm version) |
 | Visualisation types | In the SDK, **with zod schemas** (`./schema`) |
 | Root helpers | `defineExtension`, lazy guards, `validateExtension`, env config helpers |
 | ESLint shareable config | `./eslint` subpath, core rules only |
