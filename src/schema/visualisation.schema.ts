@@ -1,0 +1,87 @@
+import { z } from 'zod';
+import { nonEmpty } from 'src/schema/common.schema';
+import { anchorSchema } from 'src/schema/anchor.schema';
+import { encodingSchema } from 'src/schema/encoding.schema';
+import { encodingPresetSchema } from 'src/schema/preset.schema';
+import { substrateDescriptorSchema } from 'src/schema/substrate.schema';
+import { transportSchema } from 'src/schema/transport.schema';
+
+const layoutSchema = z.object({
+  type: z.enum(['single', 'split', 'grid', 'tabs']),
+  panes: z.array(nonEmpty).min(1),
+});
+
+/** Binds a signal to a substrate with an inline encoding or a named preset. */
+const encodingBindingSchema = z
+  .object({
+    target: nonEmpty,
+    substrate: nonEmpty,
+    encoding: encodingSchema.optional(),
+    preset: nonEmpty.optional(),
+  })
+  .refine((b) => (b.encoding === undefined) !== (b.preset === undefined), {
+    message: 'Each binding needs exactly one of "encoding" or "preset"',
+  });
+
+const assetShape = z.object({
+  schemaVersion: z.string().regex(/^1\.\d+$/, 'Only schema version 1.x'),
+  name: nonEmpty,
+  description: z.string().optional(),
+  domain: nonEmpty.optional(),
+  layout: layoutSchema,
+  substrates: z.record(nonEmpty, substrateDescriptorSchema),
+  transports: z.array(transportSchema).default([]),
+  anchors: z.array(anchorSchema).default([]),
+  encodings: z.array(encodingBindingSchema).default([]),
+  presets: z.array(encodingPresetSchema).optional(),
+});
+
+type AssetShape = z.infer<typeof assetShape>;
+
+const unknownReference = (
+  ctx: z.RefinementCtx,
+  path: (string | number)[],
+  what: string,
+) => {
+  ctx.addIssue({ code: 'custom', path, message: `Unknown ${what}` });
+};
+
+const checkPanes = (asset: AssetShape, ctx: z.RefinementCtx) => {
+  asset.layout.panes.forEach((pane, i) => {
+    if (!(pane in asset.substrates)) {
+      unknownReference(ctx, ['layout', 'panes', i], `substrate "${pane}"`);
+    }
+  });
+};
+
+const checkBindings = (asset: AssetShape, ctx: z.RefinementCtx) => {
+  asset.encodings.forEach((binding, i) => {
+    if (!(binding.substrate in asset.substrates)) {
+      const what = `substrate "${binding.substrate}"`;
+      unknownReference(ctx, ['encodings', i, 'substrate'], what);
+    }
+  });
+};
+
+const checkHomographies = (asset: AssetShape, ctx: z.RefinementCtx) => {
+  const ids = new Set(
+    Object.values(asset.substrates).map((s) => s.calibration?.id),
+  );
+  asset.anchors.forEach((anchor, i) => {
+    if (anchor.homographyId !== undefined && !ids.has(anchor.homographyId)) {
+      const what = `homography "${anchor.homographyId}"`;
+      unknownReference(ctx, ['anchors', i, 'homographyId'], what);
+    }
+  });
+};
+
+/** A `visualisation.json` library asset, including its cross-references. */
+export const visualisationAssetSchema = assetShape.superRefine((asset, ctx) => {
+  checkPanes(asset, ctx);
+  checkBindings(asset, ctx);
+  checkHomographies(asset, ctx);
+});
+
+/** Validates an unknown value as a visualisation asset without throwing. */
+export const parseVisualisationAsset = (json: unknown) =>
+  visualisationAssetSchema.safeParse(json);
