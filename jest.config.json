@@ -23,7 +23,13 @@
   },
   "collectCoverage": true,
   "coverageReporters": ["text", "cobertura", "clover", "lcov", "json"],
-  "collectCoverageFrom": ["src/**/*.{ts,tsx}", "!src/**/*.types.ts"],
+  "collectCoverageFrom": [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.types.ts",
+    "!src/index.ts",
+    "!src/schema/index.ts",
+    "!src/testing/index.ts"
+  ],
   "testTimeout": 15000,
   "modulePathIgnorePatterns": ["dist"],
   "testRegex": "/tests/.*\\.test\\.tsx?$",

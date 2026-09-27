@@ -1,5 +1,9 @@
 import { type ReactElement, type ReactNode, Suspense } from 'react';
-import { render, type RenderOptions } from '@testing-library/react';
+import {
+  render,
+  type RenderOptions,
+  type RenderResult,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HostProvider } from 'src/host/HostProvider';
 import type { HostServices } from 'src/host/hostServices.types';
@@ -23,7 +27,7 @@ export interface RenderWithHostOptions<H extends HostServices> extends Omit<
 const renderWithHost = <H extends HostServices = FakeHostServices>(
   ui: ReactElement,
   options: RenderWithHostOptions<H> = {},
-) => {
+): RenderResult & { readonly host: H } => {
   const { host: given, route = '/', fallback = null, ...rest } = options;
   const host = (given ?? fakeHostServices()) as H;
   const result = render(
