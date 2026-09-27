@@ -9,6 +9,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
+// Node 24 strips the types of this type-only module, so the source is used directly.
+import dtaasKitConfig from './src/eslint/index.ts';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -162,4 +164,9 @@ export default [
       ],
     },
   },
+  // The example kit obeys the rules the SDK asks of every kit.
+  ...dtaasKitConfig.map((config) => ({
+    ...config,
+    files: ['examples/**/*.ts', 'examples/**/*.tsx'],
+  })),
 ];
