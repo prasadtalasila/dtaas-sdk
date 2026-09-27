@@ -10,3 +10,7 @@ docs/visualization/tex/*.bbl
 docs/visualization/tex/*.blg
 docs/visualization/tex/*.out
 docs/visualization/tex/*.toc
+
+# qlty keeps caches and symlinks next to its config
+.qlty/*
+!.qlty/qlty.toml

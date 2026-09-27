@@ -1,0 +1,10 @@
+# Source documents are kept as authored.
+docs/dtaas-client-modular-architecture.md
+docs/visualization/
+docs/superpowers/
+.superpowers/
+dist/
+coverage/
+# yamllint owns YAML formatting, as in DTaaS.
+*.yml
+*.yaml

@@ -58,7 +58,8 @@
     "build": "tsup && tsc --project tsconfig.build.json && tsc-alias --project tsconfig.build.json",
     "typecheck": "tsc --project tsconfig.eslint.json --noEmit",
     "clean": "node --eval \"const { rmSync } = require('node:fs'); ['coverage', 'dist'].forEach((path) => rmSync(path, { recursive: true, force: true }))\"",
-    "format": "prettier --write \"*.{ts,mjs,json,md}\" \"{src,tests,examples}/**/*.{ts,tsx,mjs,json}\" \"docs/*.md\"",
+    "format": "prettier --write \"*.{ts,mjs,json,md}\" \"{src,tests,examples}/**/*.{ts,tsx,mjs,json,md}\" \"docs/*.md\"",
+    "format:check": "prettier --check \"*.{ts,mjs,json,md}\" \"{src,tests,examples}/**/*.{ts,tsx,mjs,json,md}\" \"docs/*.md\"",
     "syntax": "eslint . --fix",
     "lint": "eslint .",
     "test:unit": "jest --config jest.config.json --coverageDirectory=coverage/unit tests/unit --setupFilesAfterEnv ./tests/unit/jest.setup.ts",
@@ -121,11 +122,14 @@
     "prettier": "3.9.5",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-router-dom": "7.18.1",
+    "react-router-dom": "7.18.4",
     "ts-jest": "29.4.11",
     "tsc-alias": "1.9.1",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "zod": "4.4.3"
+  },
+  "resolutions": {
+    "esbuild": "0.28.1"
   }
 }

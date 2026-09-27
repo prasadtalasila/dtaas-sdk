@@ -1,0 +1,100 @@
+name: DTaaS SDK npm package
+
+'on':
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate DTaaS SDK npm package (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        node-version: [24]
+    steps:
+      - name: Checkout
+        # v7.0.0
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          lfs: false
+
+      - name: Setup node
+        # v6.4.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install package dependencies
+        run: yarn install --frozen-lockfile --ignore-scripts --network-timeout 1000000
+
+      - name: Check formatting
+        run: yarn format:check
+
+      - name: Run the linting checks
+        run: yarn lint
+
+      - name: Type-check sources, tests and examples
+        run: yarn typecheck
+
+      - name: Run unit and integration tests with coverage gate
+        run: yarn test:coverage
+
+      - name: Build, pack, install and smoke-test the package
+        run: yarn test:e2e
+
+      - name: Upload unit and integration test coverage to Codecov
+        # v7.0.0
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: coverage/all/coverage-final.json
+          flags: dtaas-sdk-unit-integration-tests
+          fail_ci_if_error: false
+
+  # Publishing runs only in the association's repository, so a fork or a
+  # personal copy never publishes @into-cps-association/dtaas-sdk.
+  publish-package-github:
+    permissions:
+      contents: read  # Required for checking out the code
+      packages: write  # Required for GitHub Packages
+    if: |
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main' &&
+      github.repository_owner == 'INTO-CPS-Association'
+    name: Publish to GitHub Packages
+    needs: validate
+    uses: ./.github/workflows/publish-npm.yml
+    with:
+      node-version: '24'
+      registry-url: 'https://npm.pkg.github.com/'
+    secrets:
+      NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-package-npm:
+    permissions:
+      contents: read  # Required for checking out the code
+      packages: write  # Required by the publish-npm reusable workflow
+    if: |
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main' &&
+      github.repository_owner == 'INTO-CPS-Association'
+    name: Publish to npm
+    needs: validate
+    uses: ./.github/workflows/publish-npm.yml
+    with:
+      node-version: '24'
+      registry-url: 'https://registry.npmjs.org'
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,85 @@
+config_version = "0"
+
+exclude_patterns = [
+  "*_min.*",
+  "*-min.*",
+  "*.min.*",
+  "**/*.d.ts",
+  "**/.yarn/**",
+  "**/build/**",
+  "**/coverage/**",
+  "**/dist/**",
+  "**/node_modules/**",
+  "docs/visualization/**",
+  # Source documents are kept as authored.
+  "docs/dtaas-client-modular-architecture.md",
+  "docs/superpowers/**",
+  ".superpowers/**",
+]
+
+test_patterns = [
+  "**/test/**",
+  "**/tests/**",
+  "**/*.test.*",
+]
+
+[smells]
+mode = "comment"
+
+[smells.boolean_logic]
+threshold = 4
+
+[smells.file_complexity]
+threshold = 55
+
+[smells.return_statements]
+threshold = 4
+
+[smells.nested_control_flow]
+threshold = 4
+
+[smells.function_parameters]
+threshold = 4
+
+[smells.function_complexity]
+threshold = 5
+
+[[source]]
+name = "default"
+default = true
+
+[[plugin]]
+name = "actionlint"
+
+[[plugin]]
+name = "eslint"
+version = "9.39.5"
+package_file = "package.json"
+package_filters = ["eslint", "jest", "prettier"]
+
+[[plugin]]
+name = "markdownlint"
+version = "0.41.0"
+
+[[plugin]]
+name = "osv-scanner"
+
+[[plugin]]
+name = "prettier"
+version = "3.9.5"
+package_file = "package.json"
+package_filters = ["prettier"]
+
+[[plugin]]
+name = "ripgrep"
+
+[[plugin]]
+name = "trufflehog"
+
+[[plugin]]
+name = "yamllint"
+
+# yamllint owns YAML formatting, as in DTaaS; Prettier's comment spacing conflicts.
+[[exclude]]
+plugins = ["prettier"]
+file_patterns = ["**/*.yml", "**/*.yaml"]

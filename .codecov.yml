@@ -1,0 +1,16 @@
+comment:
+  layout: 'header, diff, files'
+
+coverage:
+  status:
+    project:
+      default:
+        target: 90%
+        threshold: 20%
+    patch:
+      default:
+        informational: true
+codecov:
+  require_ci_to_pass: false
+  notify:
+    wait_for_ci: false

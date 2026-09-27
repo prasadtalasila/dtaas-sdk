@@ -9,7 +9,7 @@ const PEERS = [
   'react@19.2.0',
   'react-dom@19.2.0',
   'zod@4.4.3',
-  'react-router-dom@7.18.1',
+  'react-router-dom@7.18.4',
   '@testing-library/react@16.3.0',
   '@testing-library/dom@10.4.0',
   'eslint@9.39.5',
@@ -18,14 +18,13 @@ const PEERS = [
 const ALLOWED =
   /^package\/(package\.json|README\.md|LICENSE\.md|CHANGELOG\.md|dist\/.+\.(js|d\.ts))$/;
 const REQUIRED = [
-  'index',
-  'schema/index',
-  'testing/index',
-  'eslint/index',
-].flatMap((entry) => [
-  `package/dist/${entry}.js`,
-  `package/dist/${entry}.d.ts`,
-]);
+  ...['README.md', 'LICENSE.md', 'CHANGELOG.md'].map(
+    (file) => `package/${file}`,
+  ),
+  ...['index', 'schema/index', 'testing/index', 'eslint/index'].flatMap(
+    (entry) => [`package/dist/${entry}.js`, `package/dist/${entry}.d.ts`],
+  ),
+];
 
 // Argument arrays, no shell; output stays visible so failures are easy to diagnose.
 const yarn = (args, cwd) =>

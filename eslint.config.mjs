@@ -6,16 +6,21 @@ import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import globals from 'globals';
 import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
-// Node 24 strips the types of this type-only module, so the source is used directly.
-import dtaasKitConfig from './src/eslint/index.ts';
+// Plugins resolve next to this file, like its static imports. Project files
+// resolve from the working directory, because qlty runs ESLint on a copy of
+// this config in its own cache.
+const configDirectory = path.dirname(fileURLToPath(import.meta.url));
+const workingDirectory = process.cwd();
 
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
+// Node 24 strips the types of this type-only module, so the source is used directly.
+const { default: dtaasKitConfig } = await import(
+  pathToFileURL(path.join(workingDirectory, 'src/eslint/index.ts')).href
+);
 const compat = new FlatCompat({
-  baseDirectory: dirname,
+  baseDirectory: configDirectory,
   recommendedConfig: js.configs.recommended,
   allConfig: js.configs.all,
 });
@@ -137,7 +142,7 @@ export default [
       parser: tsParser,
       parserOptions: {
         requireConfigFile: false,
-        project: [path.join(dirname, 'tsconfig.eslint.json')],
+        project: [path.join(workingDirectory, 'tsconfig.eslint.json')],
       },
     },
     rules: {
