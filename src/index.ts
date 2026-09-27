@@ -11,6 +11,12 @@ export {
 
 // Extension helpers
 export { default as defineExtension } from 'src/extension/defineExtension';
+export {
+  envPrefix,
+  isExtensionDisabled,
+  readExtensionConfig,
+} from 'src/extension/extensionConfig';
+export type { EnvRecord } from 'src/extension/extensionConfig';
 export { isLazyComponent, isLazyLoader } from 'src/extension/lazy';
 export { default as validateExtension } from 'src/extension/validateExtension';
 export type {
@@ -34,6 +40,8 @@ export type {
 } from 'src/extension/extension.types';
 
 // Host services
+export { HostProvider, useHost } from 'src/host/HostProvider';
+export type { HostProviderProps } from 'src/host/HostProvider';
 export type { HostServices } from 'src/host/hostServices.types';
 export type {
   AuthService,
