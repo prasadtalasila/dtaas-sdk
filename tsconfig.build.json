@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json", // Keep all settings from the main config.
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true, // tsup emits the JavaScript.
+    "sourceMap": false,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}
