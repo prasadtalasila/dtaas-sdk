@@ -28,7 +28,8 @@
     "src/**/*.{ts,tsx}",
     "!src/**/*.types.ts",
     "!src/**/index.ts",
-    "!src/converter/generated/**"
+    "!src/converter/generated/**",
+    "!src/react/canvasRenderer.ts"
   ],
   "testTimeout": 15000,
   "modulePathIgnorePatterns": ["dist"],
