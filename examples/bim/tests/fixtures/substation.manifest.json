@@ -1,0 +1,42 @@
+{
+  "model": {
+    "source": "substation.ifc",
+    "source_sha256": "unknown",
+    "converter": "ifc_explorer.to_manifest 0.1.0",
+    "geometry": "substation.glb"
+  },
+  "bindings": [
+    {
+      "selector": { "globalId": "0_sgz7bzz4Jh2ckU1ehFe$" },
+      "label": "HX-1 supply temperature",
+      "source": {
+        "live": { "transport": "mqtt", "topic": "swim/hx1/supply" }
+      },
+      "display": { "unit": "°C", "ramp": [4, 16] }
+    },
+    {
+      "selector": { "globalId": "1yETHMphv6LwABqR4Pbs5g" },
+      "label": "HX-1 supply temperature (duplicate probe)",
+      "source": {
+        "live": { "transport": "mqtt", "topic": "swim/hx1/supply" }
+      },
+      "display": { "unit": "°C", "ramp": [4, 16] }
+    },
+    {
+      "selector": { "nodeName": "Pump-2" },
+      "label": "Pump-2 flow rate",
+      "source": {
+        "live": { "transport": "mqtt", "topic": "swim/p2/flow" }
+      },
+      "display": { "unit": "L/min", "ramp": [0, 200] }
+    },
+    {
+      "selector": { "globalId": "2O2Fr$t4X7Zf8NOew3FLOH" },
+      "label": "HX-1 return temperature (history only)",
+      "source": {
+        "history": { "bucket": "swim", "measurement": "temperature" }
+      },
+      "display": { "unit": "°C", "ramp": [4, 16] }
+    }
+  ]
+}
