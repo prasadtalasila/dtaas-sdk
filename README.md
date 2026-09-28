@@ -86,6 +86,10 @@ it('satisfies the DTaaS extension contract', async () => {
 
 [`examples/hello-kit`](examples/hello-kit) is a complete, tested example.
 
+[`examples/bim`](examples/bim/README.md) is a larger, standalone example: a
+full port of bim-kit 0.1.1 onto the SDK, with its own package, build, test
+suite and CI job.
+
 ## 🔢 Versions
 
 The npm version (`0.1.0`) and the contract revision are separate. Every

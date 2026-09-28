@@ -63,6 +63,23 @@ examples/hello-kit/   the template layout of a domain kit
 - `globalThis` instead of `window`; `node:` prefixes for Node built-ins.
 - Tests live in `tests/`, never next to the source, and match `*.test.ts(x)`.
 
+## examples/bim
+
+[`examples/bim`](examples/bim) is a standalone package (its own
+`package.json`, `yarn.lock`, tests and CI job), not part of this workspace.
+From the repository root:
+
+```bash
+yarn install                # once, at the root
+cd examples/bim
+yarn install
+yarn sdk                    # builds, packs and installs this SDK as a tarball
+yarn test:all
+```
+
+See [`examples/bim/README.md`](examples/bim/README.md) for its full scripts
+table, entry points and the `bim-example` CI job.
+
 ## Releasing
 
 1. Bump `version` in `package.json` and add a `CHANGELOG.md` entry.
