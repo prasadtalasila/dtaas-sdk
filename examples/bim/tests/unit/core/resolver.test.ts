@@ -80,6 +80,21 @@ test('says an express id does not survive a re-export', () => {
   expect(unresolved[0].reason).toMatch(/does not survive a re-export/);
 });
 
+test('resolves an express id that is still in the model', () => {
+  const { resolved } = resolveBindings([binding({ expressId: 101 })], SCENE);
+
+  expect(resolved[0].object.globalId).toBe('0_sgz7bzz4Jh2ckU1ehFe$');
+});
+
+test('says no object carries a nodeName at all, not just that it is shared', () => {
+  const { unresolved } = resolveBindings(
+    [binding({ nodeName: 'Nothing-Here' })],
+    SCENE,
+  );
+
+  expect(unresolved[0].reason).toBe('no object is named Nothing-Here.');
+});
+
 test('handles an empty model without throwing', () => {
   const { resolved, unresolved } = resolveBindings(
     [binding({ globalId: '0_sgz7bzz4Jh2ckU1ehFe$' })],

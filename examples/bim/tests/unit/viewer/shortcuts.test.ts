@@ -174,6 +174,19 @@ test('typing in a field is typing, not a shortcut', () => {
   expect(scene.state.transparent).toBe(false);
 });
 
+test('a key press with no target still works', () => {
+  const scene = view();
+  const [ctx] = context(scene);
+
+  const handled = handleKey(
+    { key: 't', target: null } as unknown as KeyboardEvent,
+    ctx,
+  );
+
+  expect(handled).toBe(true);
+  expect(scene.state.transparent).toBe(true);
+});
+
 test('an upper case key press still works', () => {
   const scene = view();
   const [ctx] = context(scene);

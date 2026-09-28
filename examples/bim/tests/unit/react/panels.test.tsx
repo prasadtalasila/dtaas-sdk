@@ -49,6 +49,36 @@ test('FloorPicker shows the floors and steps up on the up arrow', async () => {
   expect(onChange).toHaveBeenCalledWith('L1');
 });
 
+test('FloorPicker draws nothing for a model with no storeys', () => {
+  const { container } = render(
+    <FloorPicker storeys={[]} current={null} onChange={jest.fn()} />,
+  );
+  expect(container).toBeEmptyDOMElement();
+});
+
+test('FloorPicker steps down from All Floors to the highest floor', async () => {
+  const user = userEvent.setup();
+  const onChange = jest.fn();
+  render(
+    <FloorPicker storeys={['L1', 'L2']} current={null} onChange={onChange} />,
+  );
+
+  await user.click(screen.getByRole('button', { name: 'The floor below' }));
+  expect(onChange).toHaveBeenCalledWith('L2');
+});
+
+test('FloorPicker returns to All Floors when it is chosen from the menu', async () => {
+  const user = userEvent.setup();
+  const onChange = jest.fn();
+  render(
+    <FloorPicker storeys={['L1', 'L2']} current="L1" onChange={onChange} />,
+  );
+
+  await user.click(screen.getByRole('combobox', { name: 'Floor' }));
+  await user.click(await screen.findByRole('option', { name: 'All Floors' }));
+  expect(onChange).toHaveBeenCalledWith(null);
+});
+
 test('Toolbar shows the shortcut buttons and runs one on click', async () => {
   const user = userEvent.setup();
   const view = wallView();

@@ -26,6 +26,11 @@ function binding(globalId: string, ramp: [number, number] = [4, 16]): Binding {
   };
 }
 
+test('ageOf falls back to the current time when none is given', () => {
+  const recent: Reading = { value: 1, receivedAt: Date.now() };
+  expect(ageOf(recent)).toBeGreaterThanOrEqual(0);
+});
+
 test('a reading that never arrived has no age', () => {
   expect(ageOf(undefined, NOW)).toBeNull();
   expect(ageText(undefined, 'live', DEFAULT_STALE_AFTER_S, NOW)).toBe(
@@ -140,12 +145,32 @@ describe('the scopes worth offering', () => {
   test('one sensor is not enough for Per Sensor, since one group is the whole model', () => {
     expect(availableScopes([bind('a')], at)).toEqual(['off', 'building']);
   });
+
+  test('a binding with no GlobalId is skipped without asking the zone function', () => {
+    const nodeBinding: Binding = {
+      selector: { nodeName: 'Pump-2' },
+      label: 'Pump-2',
+      source: { live: { transport: 'mqtt', topic: 't/pump2' } },
+      display: { unit: 'C', ramp: [0, 1] },
+    };
+    expect(availableScopes([nodeBinding], at)).toEqual(['off', 'building']);
+  });
 });
 
 test('every object is in the building, whatever else it is in', () => {
   expect(zoneOf('building', undefined)).toBe('building');
   expect(zoneOf('room', { storey: 'L1' })).toBeUndefined();
   expect(zoneOf('storey', { storey: 'L1' })).toBe('L1');
+});
+
+test('off and sensor put nothing in a zone of its own', () => {
+  expect(zoneOf('off', { room: 'R1', storey: 'L1' })).toBeUndefined();
+  expect(zoneOf('sensor', { room: 'R1', storey: 'L1' })).toBeUndefined();
+});
+
+test('nothing known about an object leaves it out of a room or a storey', () => {
+  expect(zoneOf('room', undefined)).toBeUndefined();
+  expect(zoneOf('storey', undefined)).toBeUndefined();
 });
 
 test('several sensors in one zone average', () => {

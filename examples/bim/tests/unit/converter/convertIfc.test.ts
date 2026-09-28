@@ -98,6 +98,14 @@ describe('a basin, one object at the origin', () => {
     for (const object of objects) expect(object.ifcClass).toMatch(/^Ifc/);
   });
 
+  test('reports progress as each object converts', async () => {
+    const onProgress = jest.fn();
+    const { objects } = await convertIfc(bytes, { onProgress });
+
+    expect(onProgress).toHaveBeenCalledTimes(objects.length);
+    expect(onProgress).toHaveBeenLastCalledWith(objects.length);
+  });
+
   test('gives indices that address the vertices it returns', async () => {
     // An index past the end draws nothing and reports nothing, so it is
     // worth one assertion.

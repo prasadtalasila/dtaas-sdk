@@ -1,5 +1,9 @@
 import { parseVisualisationAsset } from '@into-cps-association/dtaas-sdk/schema';
-import { manifestToVisualisation, readManifest } from 'src/schema';
+import {
+  manifestToVisualisation,
+  readManifest,
+  type Manifest,
+} from 'src/schema';
 import fixture from 'tests/fixtures/substation.manifest.json';
 
 const manifest = () => {
@@ -76,5 +80,34 @@ describe('manifestToVisualisation', () => {
   it('declares no transport when nothing is live', () => {
     const m = { ...manifest(), bindings: [] };
     expect(manifestToVisualisation(m, options).asset.transports).toEqual([]);
+  });
+
+  it('the substrate loads the raw source when no converted geometry exists', () => {
+    const m: Manifest = {
+      model: { source: 'raw.ifc', source_sha256: 'unknown', converter: 'test' },
+      bindings: [],
+    };
+    const { asset } = manifestToVisualisation(m, options);
+    expect(asset.substrates.building.source).toBe('raw.ifc');
+  });
+
+  it('falls back to a default colour domain when a binding declares no ramp', () => {
+    const m: Manifest = {
+      model: manifest().model,
+      bindings: [
+        {
+          selector: { globalId: '0'.repeat(22) },
+          label: 'No ramp',
+          source: { live: { transport: 'mqtt', topic: 't/no-ramp' } },
+          // A valid manifest always declares a ramp; this stands in for one
+          // that reached here despite that, so the fallback still has a test.
+          display: {
+            unit: '°C',
+          } as unknown as Manifest['bindings'][number]['display'],
+        },
+      ],
+    };
+    const { asset } = manifestToVisualisation(m, options);
+    expect(asset.encodings[0].encoding).toMatchObject({ domain: [0, 1] });
   });
 });
