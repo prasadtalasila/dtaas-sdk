@@ -5,6 +5,7 @@ docs/superpowers/
 .superpowers/
 dist/
 coverage/
+examples/bim/
 # yamllint owns YAML formatting, as in DTaaS.
 *.yml
 *.yaml
