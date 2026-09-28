@@ -4,4 +4,4 @@ export {
   type Converted,
   type ConvertedObject,
   type ConvertOptions,
-} from 'src/converter/types';
+} from 'src/converter/converter.types';

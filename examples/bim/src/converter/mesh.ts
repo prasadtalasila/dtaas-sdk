@@ -10,11 +10,20 @@
 import { type FlatMesh, type IfcAPI } from 'web-ifc';
 
 import { joinPieces, readPiece, type Piece } from 'src/converter/pieces';
-import { type ConvertedObject } from 'src/converter/types';
+import { type ConvertedObject } from 'src/converter/converter.types';
 
 interface Line {
   GlobalId?: { value?: string };
   Name?: { value?: string };
+}
+
+function identityOf(
+  api: IfcAPI,
+  model: number,
+  mesh: FlatMesh,
+): { globalId?: string; name?: string } {
+  const line = api.GetLine(model, mesh.expressID, false) as Line | null;
+  return { globalId: line?.GlobalId?.value, name: line?.Name?.value };
 }
 
 function readPieces(api: IfcAPI, model: number, mesh: FlatMesh): Piece[] {
@@ -26,14 +35,22 @@ function readPieces(api: IfcAPI, model: number, mesh: FlatMesh): Piece[] {
   return pieces;
 }
 
+function ifcClassOf(api: IfcAPI, model: number, mesh: FlatMesh): string {
+  // The mesh carries the express id, not the entity type, so the type is
+  // asked for separately and turned into the name a person reads.
+  return (
+    api.GetNameFromTypeCode(api.GetLineType(model, mesh.expressID)) ||
+    'IfcProduct'
+  );
+}
+
 /** Read one mesh, or return `null` for one that cannot be bound or drawn. */
 export function toObject(
   api: IfcAPI,
   model: number,
   mesh: FlatMesh,
 ): ConvertedObject | null {
-  const line = api.GetLine(model, mesh.expressID, false) as Line | null;
-  const globalId = line?.GlobalId?.value;
+  const { globalId, name } = identityOf(api, model, mesh);
   // Without a GlobalId nothing can be bound to it, and binding is the whole
   // purpose.
   if (!globalId) return null;
@@ -44,12 +61,8 @@ export function toObject(
   const { positions, normals, indices } = joinPieces(pieces);
   return {
     globalId,
-    // The mesh carries the express id, not the entity type, so the type is
-    // asked for separately and turned into the name a person reads.
-    ifcClass:
-      api.GetNameFromTypeCode(api.GetLineType(model, mesh.expressID)) ||
-      'IfcProduct',
-    name: line?.Name?.value,
+    ifcClass: ifcClassOf(api, model, mesh),
+    name,
     positions,
     normals,
     indices,
