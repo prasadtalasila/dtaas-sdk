@@ -145,6 +145,12 @@ export default [
     },
   },
   {
+    files: ['**/*.slice.ts'],
+    rules: {
+      'no-param-reassign': ['error', { props: false }],
+    },
+  },
+  {
     files: ['tests/**/*.ts', 'tests/**/*.tsx'],
     rules: {
       'no-restricted-globals': [
