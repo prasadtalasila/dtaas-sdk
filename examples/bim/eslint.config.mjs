@@ -145,6 +145,14 @@ export default [
     },
   },
   {
+    // AGENTS.md: functions stay under 25 lines and files under 250 lines.
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    rules: {
+      'max-lines-per-function': ['error', { max: 25 }],
+      'max-lines': ['error', { max: 250 }],
+    },
+  },
+  {
     files: ['**/*.slice.ts'],
     rules: {
       'no-param-reassign': ['error', { props: false }],

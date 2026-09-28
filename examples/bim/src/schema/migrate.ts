@@ -45,6 +45,18 @@ interface Anchored {
   readonly anchor: Anchor;
 }
 
+/** An anchored binding for a resolved GlobalId and live topic. */
+function anchorFor(
+  binding: Binding,
+  globalId: string,
+  topic: string,
+): Anchored {
+  return {
+    binding,
+    anchor: { signalPath: topic, kind: ANCHOR_KIND, ref: globalId },
+  };
+}
+
 /**
  * One binding, sorted into what it can still become.
  *
@@ -72,12 +84,7 @@ function classify(
     };
   }
 
-  return {
-    anchor: {
-      binding,
-      anchor: { signalPath: topic, kind: ANCHOR_KIND, ref: globalId },
-    },
-  };
+  return { anchor: anchorFor(binding, globalId, topic) };
 }
 
 function partition(bindings: Binding[]): {
