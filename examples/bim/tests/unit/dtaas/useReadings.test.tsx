@@ -52,13 +52,30 @@ describe('useReadings', () => {
     expect(result.current.readings.has('C')).toBe(false);
   });
 
-  it('leaves readings unchanged for a non-numeric sample', () => {
+  it('leaves an existing reading unchanged when a later sample is non-numeric', () => {
     const { signals } = fakeHostServices();
     const { result } = renderHook(() => useReadings(signals, onlyA));
 
-    act(() => signals.emit(sampleOn('t1', 'x', 100)));
+    act(() => signals.emit(sampleOn('t1', 5, 100)));
+    expect(result.current.readings.get('A')).toEqual({
+      value: 5,
+      receivedAt: 100,
+    });
 
-    expect(result.current.readings.size).toBe(0);
+    // A string or boolean sample must be ignored, not just "add nothing":
+    // it must not clear or overwrite the reading already on record.
+    act(() => signals.emit(sampleOn('t1', 'x', 200)));
+    expect(result.current.readings.get('A')).toEqual({
+      value: 5,
+      receivedAt: 100,
+    });
+
+    act(() => signals.emit(sampleOn('t1', true, 300)));
+    expect(result.current.readings.get('A')).toEqual({
+      value: 5,
+      receivedAt: 100,
+    });
+    expect(result.current.readings.size).toBe(1);
   });
 
   it('ignores a sample on a path no binding listens to', () => {
