@@ -11,9 +11,11 @@ import type {
   ExtensionReducer,
   HostServices,
   SignalSample,
+  SignalsService,
   SubstrateAdapter,
   VisualisationAsset,
 } from 'src/index';
+import fakeHostServices from 'src/testing/fakeHostServices';
 
 const Page = lazy(async () => ({ default: () => <p>page</p> }));
 const Tab = lazy(async () => ({
@@ -107,6 +109,14 @@ describe('contract types', () => {
       routes: [{ path: '', element: () => null }],
     };
     expect(eager).toBeDefined();
+  });
+
+  it('requires SignalsService.connection', () => {
+    const { connection, ...withoutConnection } = fakeHostServices().signals;
+    // @ts-expect-error connection is required
+    const signals: SignalsService = withoutConnection;
+    expect(connection.get()).toBe('live');
+    expect(signals).toBeDefined();
   });
 
   it('describe the layer types of the report', () => {

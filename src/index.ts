@@ -64,6 +64,8 @@ export type {
   PutOptions,
 } from 'src/host/storage.types';
 export type {
+  ConnectionState,
+  ConnectionStatus,
   Playhead,
   SaveOptions,
   SignalRegistry,
@@ -71,6 +73,7 @@ export type {
   SubstrateRegistry,
   VizService,
 } from 'src/host/visualisation.types';
+export { default as worstConnectionState } from 'src/host/connection';
 
 // Visualisation layers
 export type {

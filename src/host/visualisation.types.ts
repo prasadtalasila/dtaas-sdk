@@ -30,6 +30,17 @@ export interface SignalRegistry {
   get(id: string): Promise<TbEntity>;
 }
 
+/** Whether the transports behind some signals are delivering. */
+export type ConnectionState = 'connecting' | 'live' | 'down';
+
+/** Tells a quiet signal from a dead connection. */
+export interface ConnectionStatus {
+  /** Worst state of the transports serving `paths`; every transport when omitted. */
+  get(paths?: readonly string[]): ConnectionState;
+  /** React hook form of `get`; re-renders when the state changes. */
+  use(paths?: readonly string[]): ConnectionState;
+}
+
 /** Layers 1–2 of the common core. Kits consume, never re-implement. */
 export interface SignalsService {
   subscribe(paths: string[], channel: Channel, sink: SignalSink): () => void;
@@ -43,6 +54,7 @@ export interface SignalsService {
   ): Promise<SignalSample[]>;
   readonly playhead: Playhead;
   readonly registry: SignalRegistry;
+  readonly connection: ConnectionStatus;
 }
 
 export interface SaveOptions {

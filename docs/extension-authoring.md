@@ -122,6 +122,10 @@ host.ui.snackbar('Saved', 'success');
 Read signals at the playhead, never as "the current value": one clock drives
 every substrate, embedded panel and video (R4).
 
+Read `host.signals.connection.use(paths)` to show whether values are current.
+Do not infer a dead connection from sample age: a quiet sensor and a dropped
+broker look the same.
+
 ## Configuration
 
 A kit reads its `env.js` keys through its schema. For id `pump`, the key
