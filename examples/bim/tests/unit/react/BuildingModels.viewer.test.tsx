@@ -3,7 +3,13 @@
  * it, and the panels and shortcuts that drive the viewer.
  */
 
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   MANIFEST,
@@ -11,6 +17,7 @@ import {
   canvasProps,
   choose,
   oneModel,
+  page,
   respond,
   show,
   viewerReady,
@@ -195,4 +202,23 @@ test('a closed note stays closed', async () => {
   );
 
   expect(screen.queryByText(/No converted geometry sits beside/)).toBeNull();
+});
+
+test('a viewer left behind by a folder change no longer takes the keyboard', async () => {
+  oneModel();
+  const user = userEvent.setup();
+  const { rerender } = show();
+  await screen.findByText(/1 IFC model/);
+  await choose(user, 'Building 1912 AK v4');
+  const { looked, painted } = await viewerReady();
+
+  rerender(page({ directory: 'elsewhere' }));
+  await screen.findByText(/1 IFC model/);
+  const pressed = fireEvent.keyDown(globalThis.document.body, { key: '1' });
+
+  expect(looked).toEqual([]);
+  // fireEvent returns false when a listener called preventDefault.
+  expect(pressed).toBe(true);
+  expect(painted.count).toBe(1);
+  expect(document.querySelector('[data-revision]')).toBeNull();
 });

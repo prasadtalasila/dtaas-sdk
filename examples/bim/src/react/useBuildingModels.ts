@@ -90,7 +90,7 @@ export function useBuildingModels(props: Readonly<BuildingModelsProps>): Page {
     readings,
     feed: props.feed ?? NO_FEED,
   };
-  const viewer = useViewer(live);
+  const viewer = useViewer(chosen, live);
   return { listing, selection, files, saving, note, onReport, live, viewer };
 }
 

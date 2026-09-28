@@ -18,6 +18,7 @@ import {
 import type { Binding, FeedState, Reading } from 'src/core';
 import { handleKey, type SceneView, type ShortcutContext } from 'src/viewer';
 import type { ViewerHandle } from 'src/react/BimCanvas';
+import { useResetOn } from 'src/react/useResetOn';
 
 export interface Viewer {
   handle: ViewerHandle | null;
@@ -120,10 +121,16 @@ function useKeyboard(
   }, [handle, shortcutContext]);
 }
 
-/** What the canvas reports back: ready, and what the cursor is over. */
-function useCanvasReports(bump: () => void) {
-  const [handle, setHandle] = useState<ViewerHandle | null>(null);
-  const [picked, pick] = useState<string | null>(null);
+/**
+ * What the canvas reports back: ready, and what the cursor is over.
+ *
+ * The handle and the pick belong to the model they came from, so both go
+ * when the chosen model does. A handle kept past that drives a view already
+ * disposed, and would keep the keyboard with no model on screen.
+ */
+function useCanvasReports(chosen: unknown, bump: () => void) {
+  const [handle, setHandle] = useResetOn<ViewerHandle | null>(chosen, null);
+  const [picked, pick] = useResetOn<string | null>(chosen, null);
   const hovered = useRef<string | null>(null);
   const onReady = useCallback(
     (ready: ViewerHandle) => {
@@ -131,7 +138,7 @@ function useCanvasReports(bump: () => void) {
       pick(null);
       bump();
     },
-    [bump],
+    [bump, pick, setHandle],
   );
   const onHover = useCallback((globalId: string | null) => {
     hovered.current = globalId;
@@ -139,16 +146,20 @@ function useCanvasReports(bump: () => void) {
   return { handle, picked, pick, hovered, onReady, onHover };
 }
 
-export function useViewer(inputs: {
-  bindings: Binding[];
-  readings: Map<string, Reading>;
-  feed: FeedState;
-}): Viewer {
+/** The viewer of `chosen`, the model on screen; it starts afresh when that changes. */
+export function useViewer(
+  chosen: unknown,
+  inputs: {
+    bindings: Binding[];
+    readings: Map<string, Reading>;
+    feed: FeedState;
+  },
+): Viewer {
   const [revision, bump] = useReducer((n: number) => n + 1, 0);
   const [helpOpen, setHelpOpen] = useState(false);
   const toggleHelp = useCallback(() => setHelpOpen((open) => !open), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
-  const { hovered, ...reports } = useCanvasReports(bump);
+  const { hovered, ...reports } = useCanvasReports(chosen, bump);
   const { handle } = reports;
   useReadings(handle, inputs, bump);
   const shortcutContext = useShortcutContext(handle, inputs.bindings, hovered, {
