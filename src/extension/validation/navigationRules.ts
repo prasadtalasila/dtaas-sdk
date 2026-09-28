@@ -1,6 +1,8 @@
-import { entries, type Loose } from 'src/extension/validation/validationUtils';
-
-const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+import {
+  entries,
+  ID_PATTERN,
+  type Loose,
+} from 'src/extension/validation/validationUtils';
 
 /** `/bim`, `/bim/x`, `/bim?q` and `/bim#h` are under `/bim`; `/bimx` is not. */
 const isUnder = (path: string, prefix: string) =>
