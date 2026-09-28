@@ -1,12 +1,11 @@
 import { SDK_MAJOR } from 'src/extension/constants';
 import {
+  ID_PATTERN,
   isObject,
   LIST_SPECS,
   type Loose,
   visualisationOf,
 } from 'src/extension/validation/validationUtils';
-
-const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 
 const isNonEmptyString = (value: unknown) =>
   typeof value === 'string' && value !== '';

@@ -1,6 +1,9 @@
 /** An extension as untyped data: kits may be plain JavaScript. */
 export type Loose = Record<string, unknown>;
 
+/** Valid extension id format: starts with lowercase, lowercase/digits/hyphens. */
+export const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+
 export const isObject = (value: unknown): value is Loose =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
