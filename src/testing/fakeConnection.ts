@@ -10,27 +10,35 @@ export interface FakeConnection extends ConnectionStatus {
   set(state: ConnectionState, paths?: readonly string[]): void;
 }
 
+/** A tiny listener registry: subscribe to changes, notify everyone. */
+const createListenerSet = () => {
+  const listeners = new Set<() => void>();
+  return {
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    notify: () => listeners.forEach((listener) => listener()),
+  };
+};
+
 /** Connection state a test controls; every path starts `live`. */
 const createFakeConnection = (): FakeConnection => {
   let fallback: ConnectionState = 'live';
   const byPath = new Map<string, ConnectionState>();
-  const listeners = new Set<() => void>();
+  const { subscribe, notify } = createListenerSet();
   const get = (paths?: readonly string[]) =>
     paths === undefined
       ? worstConnectionState([fallback, ...byPath.values()])
       : worstConnectionState(paths.map((p) => byPath.get(p) ?? fallback));
-  const subscribe = (listener: () => void) => {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  };
   const set = (state: ConnectionState, paths?: readonly string[]) => {
     if (paths === undefined) {
       fallback = state;
       byPath.clear();
     } else paths.forEach((path) => byPath.set(path, state));
-    listeners.forEach((listener) => listener());
+    notify();
   };
   return {
     get,
