@@ -1,0 +1,532 @@
+/**
+ * Tests for what a loaded model looks like and what is visible.
+ *
+ * three.js builds a scene graph without a canvas, so all of this runs in
+ * Node. Only drawing needs WebGL, and nothing here draws.
+ *
+ * The two invariants under test were both bought with bugs: one place
+ * decides the material, one place writes `visible`. When several wrote
+ * either, the last to run won, and which ran last depended on the order
+ * readings arrived.
+ */
+
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
+import { SceneView } from 'src/viewer';
+import type { Binding } from 'src/core';
+
+const NOW = 1_800_000_000_000;
+
+/** `fieldSources` is a private implementation detail of `SceneView`; the upstream test reads it straight off the instance, which only TypeScript's compile-time privacy forbids. */
+function fieldSourcesOf(view: SceneView): string[] {
+  return (view as unknown as { fieldSources: string[] }).fieldSources;
+}
+
+/** A box of the given size, at the given height, carrying an identity. */
+function object(
+  globalId: string,
+  ifcClass: string,
+  y: number,
+  height = 3,
+): Mesh {
+  const mesh = new Mesh(
+    new BoxGeometry(1, height, 1),
+    new MeshStandardMaterial(),
+  );
+  mesh.position.set(0, y + height / 2, 0);
+  mesh.userData.globalId = globalId;
+  mesh.userData.ifcClass = ifcClass;
+  mesh.updateMatrixWorld(true);
+  return mesh;
+}
+
+/** Two floors: a wall and a slab on each. */
+function building(): SceneView {
+  const model = new Group();
+  for (const mesh of [
+    object('w1', 'IfcWall', 0),
+    object('s1', 'IfcSlab', 3, 0.3),
+    object('w2', 'IfcWall', 3.3),
+    object('s2', 'IfcSlab', 6.3, 0.3),
+  ])
+    model.add(mesh);
+  model.updateMatrixWorld(true);
+
+  const tree = {
+    storeys: [{ name: 'L1' }, { name: 'L2' }],
+    rooms: [{ name: 'R1' }],
+    objects: {
+      w1: { ifcClass: 'IfcWall', storey: 'L1', room: 'R1' },
+      s1: { ifcClass: 'IfcSlab', storey: 'L1' },
+      w2: { ifcClass: 'IfcWall', storey: 'L2' },
+      s2: { ifcClass: 'IfcSlab', storey: 'L2' },
+    },
+  };
+  return new SceneView(model, tree);
+}
+
+function binding(globalId: string, ramp: [number, number] = [4, 16]): Binding {
+  return {
+    selector: { globalId },
+    label: globalId,
+    source: { live: { transport: 'mqtt', topic: `t/${globalId}` } },
+    display: { unit: '°C', ramp },
+  };
+}
+
+test('finds every object that carries a GlobalId', () => {
+  const view = building();
+
+  expect([...view.meshes.keys()].sort()).toEqual(['s1', 's2', 'w1', 'w2']);
+});
+
+test('an object with no GlobalId is not tracked, since nothing can bind to it', () => {
+  const model = new Group();
+  model.add(new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial()));
+  model.updateMatrixWorld(true);
+
+  expect(new SceneView(model).meshes.size).toBe(0);
+});
+
+test('the floors come from the measured geometry', () => {
+  expect(building().storeys).toEqual(['L1', 'L2']);
+});
+
+test('a model with no storeys offers none instead of inventing one', () => {
+  const model = new Group();
+  model.add(object('a', 'IfcWall', 0));
+  model.updateMatrixWorld(true);
+
+  expect(new SceneView(model, { objects: { a: {} } }).storeys).toEqual([]);
+});
+
+test('everything is visible until a floor is chosen', () => {
+  const view = building();
+  view.refreshVisibility();
+
+  expect([...view.meshes.values()].every((m) => m.visible)).toBe(true);
+});
+
+test('choosing a floor hides what is not on it', () => {
+  const view = building();
+  view.state.storey = 'L2';
+  view.refreshVisibility();
+
+  expect(view.meshes.get('w2')!.visible).toBe(true);
+  expect(view.meshes.get('w1')!.visible).toBe(false);
+});
+
+test('the lid comes off but the floor stays', () => {
+  // Hiding every slab takes the floor as well, which leaves the furniture
+  // standing on nothing and is worse than the lid.
+  const view = building();
+  view.state.storey = 'L1';
+  view.state.slabsHidden = true;
+  view.refreshVisibility();
+
+  expect(view.meshes.get('s1')!.visible).toBe(false);
+  expect(view.meshes.get('w1')!.visible).toBe(true);
+});
+
+test('with no floor chosen the lid toggle is all or nothing', () => {
+  const view = building();
+  view.state.slabsHidden = true;
+  view.refreshVisibility();
+
+  expect(view.meshes.get('s1')!.visible).toBe(false);
+  expect(view.meshes.get('s2')!.visible).toBe(false);
+});
+
+test('an object hidden by hand comes back in the order it went', () => {
+  const view = building();
+  view.hide('w1');
+  view.hide('w2');
+  expect(view.meshes.get('w2')!.visible).toBe(false);
+
+  view.restoreLastHidden();
+  expect(view.meshes.get('w2')!.visible).toBe(true);
+  expect(view.meshes.get('w1')!.visible).toBe(false);
+});
+
+test('hiding the same object twice does not need two restores', () => {
+  const view = building();
+  view.hide('w1');
+  view.hide('w1');
+  view.restoreLastHidden();
+
+  expect(view.meshes.get('w1')!.visible).toBe(true);
+});
+
+test('selection wins over hover, and hover over the heatmap', () => {
+  const view = building();
+  view.state.selected = 'w1';
+  view.state.hovered = 'w1';
+  view.refreshMaterials();
+  const selected = view.meshes.get('w1')!.material;
+
+  view.state.selected = null;
+  view.refreshMaterials();
+
+  expect(view.meshes.get('w1')!.material).not.toBe(selected);
+});
+
+test('hover changes nothing while hover highlighting is off', () => {
+  // Reading a heatmap with a colour following the cursor is unreadable.
+  const view = building();
+  view.refreshMaterials();
+  const before = view.meshes.get('w1')!.material;
+
+  view.state.hoverHighlight = false;
+  view.state.hovered = 'w1';
+  view.refreshMaterials();
+
+  expect(view.meshes.get('w1')!.material).toBe(before);
+});
+
+test('the heatmap colours by zone, and two objects in one zone share a material', () => {
+  const view = building();
+  view.state.heat = 'storey';
+  view.applyReadings(
+    [binding('w1')],
+    new Map([['w1', { value: 10, receivedAt: NOW }]]),
+    'live',
+    30,
+    NOW,
+  );
+  view.refreshMaterials();
+
+  expect(view.meshes.get('w1')!.material).toBe(view.meshes.get('s1')!.material);
+  expect(view.meshes.get('w2')!.material).not.toBe(
+    view.meshes.get('w1')!.material,
+  );
+});
+
+test('stale readings leave every object in its own colour', () => {
+  // A heatmap of stale values is a confident wrong answer.
+  const view = building();
+  view.refreshMaterials();
+  const own = view.meshes.get('w1')!.material;
+
+  view.state.heat = 'storey';
+  view.applyReadings(
+    [binding('w1')],
+    new Map([['w1', { value: 10, receivedAt: NOW - 600_000 }]]),
+    'live',
+    30,
+    NOW,
+  );
+  view.refreshMaterials();
+
+  expect(view.meshes.get('w1')!.material).toBe(own);
+});
+
+test('transparency reaches the shell and leaves everything else alone', () => {
+  const view = building();
+  view.refreshMaterials();
+  const wall = view.meshes.get('w1')!.material;
+
+  view.state.transparent = true;
+  view.refreshMaterials();
+
+  expect(view.meshes.get('w1')!.material).not.toBe(wall);
+  const material = view.meshes.get('w1')!.material as unknown as {
+    opacity: number;
+  };
+  expect(material.opacity < 1).toBe(true);
+});
+
+test('resetting puts a model back to how it opened', () => {
+  const view = building();
+  view.state.storey = 'L2';
+  view.state.transparent = true;
+  view.state.slabsHidden = true;
+  view.hide('w1');
+  view.reset();
+
+  expect(view.state.storey).toBe(null);
+  expect([...view.meshes.values()].every((m) => m.visible)).toBe(true);
+});
+
+test('a scope the readings do not divide is not offered', () => {
+  // Two sensors on two storeys and in one room. Grouping by storey
+  // separates them and grouping by room does not, so only one of the two
+  // is offered.
+  const view = building();
+  const bind = (globalId: string): Binding => ({
+    selector: { globalId },
+    label: globalId,
+    source: { live: { transport: 'mqtt', topic: `t/${globalId}` } },
+    display: { unit: 'C', ramp: [0, 1] },
+  });
+
+  expect(view.scopesFor([bind('w1'), bind('w2')])).toEqual([
+    'off',
+    'storey',
+    'building',
+  ]);
+  expect(view.scopesFor([bind('w1')])).toEqual(['off', 'building']);
+});
+
+describe('sizeOf', () => {
+  test('measures the object from its geometry, in metres', () => {
+    // The tree does not carry a size, so this comes from the mesh. Y is
+    // the height, because the scene is Y up.
+    const size = building().sizeOf('w1')!;
+
+    expect(size.x).toBe(1);
+    expect(size.y).toBe(3);
+    expect(size.z).toBe(1);
+  });
+
+  test('says nothing about an object that is not in the model', () => {
+    // A manifest can name an object the geometry does not have, and a size
+    // of zero would read as a real measurement of a flat thing.
+    expect(building().sizeOf('not-here')).toBe(undefined);
+  });
+});
+
+describe('highlightedClass', () => {
+  test('lights every object of the class and nothing else', () => {
+    // The question in front of a grey building is "where are the
+    // columns", and a legend that only names colours does not answer it.
+    const view = building();
+    view.state.highlightedClass = 'IfcWall';
+    view.refreshMaterials();
+
+    const material = (id: string) => view.meshes.get(id)!.material;
+    expect(material('w1')).toBe(material('w2'));
+    expect(material('w1')).not.toBe(material('s1'));
+  });
+
+  test('the selection still wins, so pointing at one object says which', () => {
+    const view = building();
+    view.state.highlightedClass = 'IfcWall';
+    view.state.selected = 'w1';
+    view.refreshMaterials();
+
+    expect(view.meshes.get('w1')!.material).not.toBe(
+      view.meshes.get('w2')!.material,
+    );
+  });
+
+  test('clearing it puts every object back in its own colour', () => {
+    const view = building();
+    const before = view.meshes.get('w1')!.material;
+    view.state.highlightedClass = 'IfcWall';
+    view.refreshMaterials();
+    view.state.highlightedClass = null;
+    view.refreshMaterials();
+
+    expect(view.meshes.get('w1')!.material).toBe(before);
+  });
+});
+
+describe('the Per Sensor scope', () => {
+  /** Two walls three metres apart, with a sensor beside each. */
+  function twoZones(): SceneView {
+    const model = new Group();
+    for (const [id, x] of [
+      ['s1', -3],
+      ['s2', 3],
+    ] as const) {
+      const mesh = new Mesh(
+        new BoxGeometry(0.1, 0.1, 0.1),
+        new MeshStandardMaterial(),
+      );
+      mesh.position.set(x, 1.2, 0);
+      mesh.userData.globalId = id;
+      mesh.userData.ifcClass = 'IfcSensor';
+      model.add(mesh);
+    }
+    const floor = new Mesh(
+      new BoxGeometry(12, 0.2, 6),
+      new MeshStandardMaterial(),
+    );
+    floor.position.set(0, -0.1, 0);
+    floor.userData.globalId = 'floor';
+    floor.userData.ifcClass = 'IfcSlab';
+    model.add(floor);
+    model.updateMatrixWorld(true);
+    return new SceneView(model, { objects: { s1: {}, s2: {}, floor: {} } });
+  }
+
+  const bind = (globalId: string): Binding => ({
+    selector: { globalId },
+    label: globalId,
+    source: { live: { transport: 'mqtt', topic: `t/${globalId}` } },
+    display: { unit: 'C', ramp: [0, 40] },
+  });
+
+  test('each sensor is its own zone', () => {
+    const view = twoZones();
+    view.state.heat = 'sensor';
+    view.buildField([bind('s1'), bind('s2')]);
+
+    expect(view.zoneFor('s1')).toBe('s1');
+    expect(view.zoneFor('s2')).toBe('s2');
+  });
+
+  test('an object between them takes the nearer one', () => {
+    // Nothing blocks here, so nearest by walking is nearest by line, which
+    // is what makes this the check that the plumbing is connected at all.
+    const view = twoZones();
+    view.state.heat = 'sensor';
+    view.buildField([bind('s1'), bind('s2')]);
+
+    expect(view.zoneFor('floor')).toBe('s1');
+  });
+
+  test('it is offered when there is more than one sensor and not before', () => {
+    const view = twoZones();
+
+    expect(
+      view.scopesFor([bind('s1'), bind('s2')]).includes('sensor'),
+    ).toBeTruthy();
+    expect(view.scopesFor([bind('s1')]).includes('sensor')).toBe(false);
+  });
+});
+
+describe('the Per Sensor scope across floors', () => {
+  /**
+   * Two floors, one sensor each, on opposite sides of the plan.
+   *
+   * The sensors are placed so that the wrong answer is visible: the probe
+   * on the upper floor sits directly above the lower floor's sensor, so a
+   * field that still holds both sources hands it the sensor downstairs.
+   */
+  function twoFloors(): SceneView {
+    const model = new Group();
+    const add = (
+      globalId: string,
+      ifcClass: string,
+      x: number,
+      y: number,
+      size: [number, number, number],
+    ) => {
+      const mesh = new Mesh(
+        new BoxGeometry(...size),
+        new MeshStandardMaterial(),
+      );
+      mesh.position.set(x, y, 0);
+      mesh.userData.globalId = globalId;
+      mesh.userData.ifcClass = ifcClass;
+      model.add(mesh);
+    };
+    add('slab1', 'IfcSlab', 0, 0.1, [12, 0.2, 6]);
+    add('slab2', 'IfcSlab', 0, 3.1, [12, 0.2, 6]);
+    add('s1', 'IfcSensor', -4, 1.2, [0.1, 0.1, 0.1]);
+    add('s2', 'IfcSensor', 4, 4.2, [0.1, 0.1, 0.1]);
+    add('p2', 'IfcFurniture', -4, 4.2, [0.4, 0.4, 0.4]);
+    model.updateMatrixWorld(true);
+
+    return new SceneView(model, {
+      storeys: [{ name: 'L1' }, { name: 'L2' }],
+      objects: {
+        slab1: { ifcClass: 'IfcSlab', storey: 'L1' },
+        s1: { ifcClass: 'IfcSensor', storey: 'L1' },
+        slab2: { ifcClass: 'IfcSlab', storey: 'L2' },
+        s2: { ifcClass: 'IfcSensor', storey: 'L2' },
+        p2: { ifcClass: 'IfcFurniture', storey: 'L2' },
+      },
+    });
+  }
+
+  const bind = (globalId: string): Binding => ({
+    selector: { globalId },
+    label: globalId,
+    source: { live: { transport: 'mqtt', topic: `t/${globalId}` } },
+    display: { unit: 'C', ramp: [0, 40] },
+  });
+
+  test('changing floor rebuilds the field instead of reusing the first one', () => {
+    // The field used to be keyed on the bindings alone, so the first floor
+    // looked at was the only floor the heatmap ever described.
+    const view = twoFloors();
+    view.state.heat = 'sensor';
+
+    view.state.storey = 'L1';
+    view.buildField([bind('s1'), bind('s2')]);
+    const onFirst = [...fieldSourcesOf(view)];
+
+    view.state.storey = 'L2';
+    view.buildField([bind('s1'), bind('s2')]);
+
+    expect(onFirst).toEqual(['s1']);
+    expect(fieldSourcesOf(view)).toEqual(['s2']);
+  });
+
+  test('a sensor downstairs does not heat the floor above it', () => {
+    const view = twoFloors();
+    view.state.heat = 'sensor';
+    view.state.storey = 'L2';
+    view.buildField([bind('s1'), bind('s2')]);
+
+    expect(view.zoneFor('p2')).toBe('s2');
+  });
+
+  test('with no floor chosen every sensor is a source, since all of them are drawn', () => {
+    const view = twoFloors();
+    view.state.heat = 'sensor';
+    view.buildField([bind('s1'), bind('s2')]);
+
+    expect(fieldSourcesOf(view)).toEqual(['s1', 's2']);
+  });
+});
+
+describe('the selection halo', () => {
+  /** A halo that records what it was asked to do, so no canvas is needed. */
+  function recorder() {
+    const calls: Array<string | null> = [];
+    return {
+      calls,
+      show: (mesh: Mesh) => calls.push(mesh.userData.globalId),
+      hide: () => calls.push(null),
+      dispose: () => {},
+    };
+  }
+
+  test('goes around the selected object', () => {
+    const view = building();
+    const glow = recorder();
+    view.attachGlow(glow);
+
+    view.state.selected = 'w1';
+    view.refreshMaterials();
+
+    expect(glow.calls[glow.calls.length - 1]).toBe('w1');
+  });
+
+  test('comes off when the selection is cleared', () => {
+    const view = building();
+    const glow = recorder();
+    view.attachGlow(glow);
+
+    view.state.selected = 'w1';
+    view.refreshMaterials();
+    view.state.selected = null;
+    view.refreshMaterials();
+
+    expect(glow.calls[glow.calls.length - 1]).toBe(null);
+  });
+
+  test('comes off when the floor filter hides what is selected', () => {
+    // A halo around a hidden object is a glow around nothing, on a floor
+    // the object is not on.
+    const view = building();
+    const glow = recorder();
+    view.attachGlow(glow);
+
+    view.state.selected = 'w1';
+    view.state.storey = 'L2';
+    view.refreshVisibility();
+    view.refreshMaterials();
+
+    expect(glow.calls[glow.calls.length - 1]).toBe(null);
+  });
+
+  test('a view with no halo paints exactly as before', () => {
+    const view = building();
+    view.state.selected = 'w1';
+
+    expect(() => view.refreshMaterials()).not.toThrow();
+  });
+});
