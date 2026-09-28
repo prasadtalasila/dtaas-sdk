@@ -10,6 +10,7 @@ import {
   checkSubstrates,
   checkUniqueness,
 } from 'src/extension/validation/contributionRules';
+import checkNavigation from 'src/extension/validation/navigationRules';
 import {
   describe,
   isObject,
@@ -32,6 +33,7 @@ const runRules = (ext: Loose, reservedIds: readonly string[]): string[] => [
   ...checkRequiredFields(ext),
   ...checkLaziness(ext),
   ...checkUniqueness(ext),
+  ...checkNavigation(ext),
   ...checkSubstrates(ext),
   ...checkDetect(ext),
 ];

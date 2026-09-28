@@ -78,6 +78,11 @@ The host owns `auth`, `library`, `contents`, `git`, `ui`, `logger`,
 `settings` and `config`. The common core owns `signals` and `viz`, and the
 host only instantiates it with endpoints from `env.js`.
 
+## Mounting extension routes
+
+The host mounts each extension's routes at `/<id>/*`, so a kit may use
+nested relative `<Routes>` to define its route hierarchy.
+
 ### Connection status
 
 `signals.connection` is required. `get(paths)` returns the worst state of the
