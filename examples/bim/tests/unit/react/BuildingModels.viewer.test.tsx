@@ -190,6 +190,17 @@ test('a heatmap with no reading yet says so beside the drawing', async () => {
   expect(screen.getByText('No current reading to colour by.')).toBeTruthy();
 });
 
+test('a message the canvas reports appears as a note', async () => {
+  oneModel();
+  await chooseTheModel();
+
+  await act(async () => {
+    canvasProps().onReport?.('Something happened.');
+  });
+
+  expect(await screen.findByText('Something happened.')).toBeTruthy();
+});
+
 test('a closed note stays closed', async () => {
   oneModel();
   const user = await chooseTheModel();

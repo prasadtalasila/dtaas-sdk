@@ -143,6 +143,28 @@ test('the pointer picks the object under it, at the centre of the view', async (
   expect(onHover.mock.calls).toEqual([['w1']]);
   expect(onSelect).toHaveBeenCalledWith('w1');
   expect(onReady.mock.calls[0][0].view.state.selected).toBe('w1');
+
+  // Hidden, the wall can no longer be under the pointer, wherever the camera
+  // framed it: a raycast never picks through what is not drawn.
+  onReady.mock.calls[0][0].view.meshes.get('w1').visible = false;
+  fireEvent.pointerMove(holder, centre);
+  fireEvent.click(holder, centre);
+  expect(onHover.mock.calls).toEqual([['w1'], [null]]);
+  expect(onSelect).toHaveBeenCalledWith(null);
+});
+
+test('the pointer never throws when nothing listens for it', async () => {
+  const { load } = mount({ onSelect: undefined });
+  await act(async () => load().onLoaded(wall()));
+  const holder = screen.getByTestId('bim-canvas');
+  holder.getBoundingClientRect = () =>
+    ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect;
+  const centre = { clientX: 50, clientY: 50 };
+
+  expect(() => {
+    fireEvent.pointerMove(holder, centre);
+    fireEvent.click(holder, centre);
+  }).not.toThrow();
 });
 
 test('unmounting gives the renderer back and ignores a late model', async () => {

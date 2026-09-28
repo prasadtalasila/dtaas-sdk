@@ -7,6 +7,16 @@ const converted: Converted = {
     {
       globalId: '0_sgz7bzz4Jh2ckU1ehFe$',
       ifcClass: 'IfcWall',
+      name: 'North Wall',
+      positions: new Float32Array([0, 0, 0]),
+      normals: new Float32Array([0, 1, 0]),
+      indices: new Uint32Array([0]),
+      colour: [1, 1, 1, 1],
+    },
+    {
+      // No name: the mesh falls back to the GlobalId, as most objects do.
+      globalId: '1yETHMphv6LwABqR4Pbs5g',
+      ifcClass: 'IfcSlab',
       positions: new Float32Array([0, 0, 0]),
       normals: new Float32Array([0, 1, 0]),
       indices: new Uint32Array([0]),
@@ -62,7 +72,7 @@ describe('bim.ifc-to-glb', () => {
     expect(output).toEqual({
       format: 'glb',
       bytes: exported,
-      metadata: { schema: 'IFC4', objects: 1, failed: 0 },
+      metadata: { schema: 'IFC4', objects: 2, failed: 0 },
     });
   });
 });

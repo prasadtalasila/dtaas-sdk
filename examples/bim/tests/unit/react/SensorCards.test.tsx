@@ -18,6 +18,50 @@ const binding: Binding = {
   display: { unit: '°C', ramp: [10, 50] },
 };
 
+test('a sensor with no GlobalId shows a disabled card and no reading', () => {
+  const nodeBinding: Binding = {
+    selector: { nodeName: 'Pump-2' },
+    label: 'Pump-2 flow rate',
+    source: { live: { transport: 'mqtt', topic: 'swim/p2/flow' } },
+    display: { unit: 'L/min', ramp: [0, 200] },
+  };
+  render(
+    <SensorCards
+      bindings={[nodeBinding]}
+      readings={new Map([['irrelevant', { value: 1, receivedAt: Date.now() }]])}
+      feed="live"
+      selected={null}
+      onSelect={() => {}}
+    />,
+  );
+
+  expect(screen.getByRole('button')).toBeDisabled();
+  expect(screen.getByText('Waiting')).toBeInTheDocument();
+});
+
+test('a note-level alert is chipped separately from a warning, with the payload unit', () => {
+  const now = Date.now();
+  render(
+    <SensorCards
+      bindings={[binding]}
+      readings={
+        new Map([
+          [
+            binding.selector.globalId as string,
+            { value: 25, receivedAt: now, unit: '°C', kind: 'prediction' },
+          ],
+        ])
+      }
+      feed="live"
+      selected={null}
+      onSelect={() => {}}
+    />,
+  );
+
+  expect(screen.getByText('1 not measured directly')).toBeInTheDocument();
+  expect(screen.getByText('Prediction')).toBeInTheDocument();
+});
+
 test('the label and the age of a reading sit on lines of their own', () => {
   render(
     <SensorCards
