@@ -16,7 +16,8 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Visualisation layer types: `SignalSample`, `Channel`, `TransportAdapter`,
   `Anchor`, `AnchorKind`, the encoding vocabulary, `SubstrateAdapter`.
 - `defineExtension`, `isLazyComponent`, `isLazyLoader` and
-  `validateExtension` (identity, laziness, uniqueness and substrate rules).
+  `validateExtension` (identity, laziness, uniqueness, navigation and
+  substrate rules).
 - Env helpers `readExtensionConfig`, `isExtensionDisabled` and `envPrefix`.
 - `./schema`: zod schemas for `visualisation.json` with cross-reference
   checks, encodings, anchors, transports, substrates and presets.
