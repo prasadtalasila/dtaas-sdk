@@ -8,6 +8,7 @@ export type {
 export { default as createFakeSignals } from 'src/testing/fakeSignals';
 export type { FakeSignals, FakeSignalsOptions } from 'src/testing/fakeSignals';
 export type { FakePlayhead } from 'src/testing/fakePlayhead';
+export type { FakeConnection } from 'src/testing/fakeConnection';
 export { default as createFakeViz } from 'src/testing/fakeViz';
 export type { FakeVizOptions, RecordedSave } from 'src/testing/fakeViz';
 export { default as createMemoryContents } from 'src/testing/memoryContents';

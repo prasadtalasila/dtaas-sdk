@@ -119,6 +119,15 @@ describe('createFakeSignals', () => {
     });
   });
 
+  describe('connection', () => {
+    it('starts live and is set through setConnection', () => {
+      const signals = createFakeSignals();
+      expect(signals.connection.get()).toBe('live');
+      signals.setConnection('down', ['j7/queue']);
+      expect(signals.connection.get(['j7/queue'])).toBe('down');
+    });
+  });
+
   it('searches and gets registry entities', async () => {
     const signals = createFakeSignals({
       entities: [

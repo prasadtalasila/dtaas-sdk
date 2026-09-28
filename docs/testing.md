@@ -63,6 +63,10 @@ host.recorded.savedAssets; // viz.save calls
 - `signals.valueAt(path, channel, t)` returns the latest sample at or before
   `t`, or `undefined`.
 - The playhead is live (follows `now`) until `set(t)`; `follow(true)` resumes.
+- `signals.setConnection(state, paths?)` sets the connection state read by
+  `signals.connection`; every path starts `live`. Omit `paths` to set the
+  fallback state and clear per-path overrides; pass `paths` to override only
+  those, e.g. `host.signals.setConnection('down', ['mqtt/wt1'])`.
 - `viz.save` validates the asset against the schema, as the host does.
 - Pass `overrides` to replace a whole service, e.g. with Jest mocks.
 

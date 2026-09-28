@@ -1,4 +1,7 @@
-import type { SignalsService } from 'src/host/visualisation.types';
+import type {
+  ConnectionState,
+  SignalsService,
+} from 'src/host/visualisation.types';
 import type { TbEntity } from 'src/visualisation/digitalTwin.types';
 import type {
   Channel,
@@ -6,6 +9,9 @@ import type {
   SignalSample,
   SignalSink,
 } from 'src/visualisation/signal.types';
+import createFakeConnection, {
+  type FakeConnection,
+} from 'src/testing/fakeConnection';
 import createFakePlayhead, {
   type FakePlayhead,
 } from 'src/testing/fakePlayhead';
@@ -18,10 +24,13 @@ export interface FakeSignalsOptions {
 
 export interface FakeSignals extends SignalsService {
   readonly playhead: FakePlayhead;
+  readonly connection: FakeConnection;
   /** Store samples and deliver them to matching subscribers. */
   emit(...samples: SignalSample[]): void;
   /** Every sample emitted so far, in emission order. */
   samples(): SignalSample[];
+  /** Set the connection state of all paths, or `paths` only, when given. */
+  setConnection(state: ConnectionState, paths?: readonly string[]): void;
 }
 
 interface Subscription {
@@ -95,8 +104,11 @@ const createFakeSignals = (options: FakeSignalsOptions = {}): FakeSignals => {
   const store = createSampleStore();
   const subscriptions = createSubscriptions();
   const playhead = createFakePlayhead(options.now ?? Date.now);
+  const connection = createFakeConnection();
   return {
     playhead,
+    connection,
+    setConnection: connection.set,
     registry: createRegistry(options.entities ?? []),
     samples: () => [...store.all],
     emit: (...samples) => {

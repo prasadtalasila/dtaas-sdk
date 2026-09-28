@@ -22,5 +22,8 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   checks, encodings, anchors, transports, substrates and presets.
 - `./testing`: `fakeHostServices`, `renderWithHost`, `replayFixture`,
   `checkConformance` and a socket guard.
+- `SignalsService.connection` (`ConnectionState`, `ConnectionStatus`) and
+  `worstConnectionState`, so a kit can tell a quiet signal from a dead
+  connection; fake `signals.setConnection(state, paths?)` for tests.
 - `./eslint`: flat-config rules enforcing the extension boundary (§6.3).
 - `examples/hello-kit`: the template layout of a domain kit.

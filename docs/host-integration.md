@@ -78,6 +78,14 @@ The host owns `auth`, `library`, `contents`, `git`, `ui`, `logger`,
 `settings` and `config`. The common core owns `signals` and `viz`, and the
 host only instantiates it with endpoints from `env.js`.
 
+### Connection status
+
+`signals.connection` is required. `get(paths)` returns the worst state of the
+transports serving those paths; a path no transport serves is `down`.
+`get([])` is `live`, but `get()` with no transports at all is `down`. Use
+`worstConnectionState` to aggregate several states the same way. `use()` must
+re-render when the state changes.
+
 ## Validating `visualisation.json`
 
 ```ts
