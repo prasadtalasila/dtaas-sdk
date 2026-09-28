@@ -24,7 +24,10 @@
 import { IfcAPI } from 'web-ifc';
 
 import { toObject } from 'src/converter/mesh';
-import { type Converted, type ConvertOptions } from 'src/converter/types';
+import {
+  type Converted,
+  type ConvertOptions,
+} from 'src/converter/converter.types';
 import { browserCarriesTheParser, carriedWasmUrl } from 'src/converter/wasm';
 
 async function openApi(options: ConvertOptions): Promise<IfcAPI> {

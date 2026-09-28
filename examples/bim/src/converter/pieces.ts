@@ -6,7 +6,7 @@
  * placement that puts it in the building; this file applies that placement
  * and joins the pieces into the one mesh a person can click.
  */
-import { type IfcAPI, type PlacedGeometry } from 'web-ifc';
+import { type IfcAPI, type IfcGeometry, type PlacedGeometry } from 'web-ifc';
 
 export interface Piece {
   positions: number[];
@@ -60,6 +60,14 @@ function turn(
   ];
 }
 
+/**
+ * Place and rotate an interleaved position/normal buffer into world space.
+ *
+ * web-ifc's flat transformation already places the object in a Y-up world,
+ * the same one the Python converter writes into its GLB. Rotating it again
+ * for the Z-up to Y-up change laid the whole building on its side: the
+ * bounding boxes of the two converters now agree to the centimetre.
+ */
 function placedVertices(
   vertices: Float32Array,
   matrix: ArrayLike<number>,
@@ -76,6 +84,28 @@ function placedVertices(
   return { positions, normals };
 }
 
+function geometryArrays(
+  api: IfcAPI,
+  geometry: IfcGeometry,
+): { vertices: Float32Array; indices: Uint32Array } {
+  return {
+    vertices: api.GetVertexArray(
+      geometry.GetVertexData(),
+      geometry.GetVertexDataSize(),
+    ),
+    indices: api.GetIndexArray(
+      geometry.GetIndexData(),
+      geometry.GetIndexDataSize(),
+    ),
+  };
+}
+
+/** Alpha is a coverage fraction and not a colour, so it stays as it is. */
+function colourOf(placed: PlacedGeometry): [number, number, number, number] {
+  const { x, y, z, w } = placed.color;
+  return [toLinear(x), toLinear(y), toLinear(z), w];
+}
+
 /** Read one placed geometry into flat arrays, already in world space and Y up. */
 export function readPiece(
   api: IfcAPI,
@@ -84,35 +114,19 @@ export function readPiece(
 ): Piece | null {
   const geometry = api.GetGeometry(model, placed.geometryExpressID);
   try {
-    const vertices = api.GetVertexArray(
-      geometry.GetVertexData(),
-      geometry.GetVertexDataSize(),
-    );
-    const indices = api.GetIndexArray(
-      geometry.GetIndexData(),
-      geometry.GetIndexDataSize(),
-    );
+    const { vertices, indices } = geometryArrays(api, geometry);
     if (vertices.length === 0 || indices.length === 0) return null;
 
-    // web-ifc's flat transformation already places the object in a Y-up
-    // world, the same one the Python converter writes into its GLB. Rotating
-    // it again for the Z-up to Y-up change laid the whole building on its
-    // side: the bounding boxes of the two converters now agree to the
-    // centimetre.
     const { positions, normals } = placedVertices(
       vertices,
       placed.flatTransformation,
     );
-
-    // Alpha is a coverage fraction and not a colour, so it stays as it is.
-    const { x, y, z, w } = placed.color;
-    const colour: [number, number, number, number] = [
-      toLinear(x),
-      toLinear(y),
-      toLinear(z),
-      w,
-    ];
-    return { positions, normals, indices: Array.from(indices), colour };
+    return {
+      positions,
+      normals,
+      indices: Array.from(indices),
+      colour: colourOf(placed),
+    };
   } finally {
     geometry.delete();
   }
