@@ -1,0 +1,124 @@
+{
+  "name": "@into-cps-association/bim-example",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Buildings extension for DTaaS: bim-kit 0.1.1 ported onto the dtaas-sdk contract.",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "./converter": {
+      "types": "./dist/converter/index.d.ts",
+      "default": "./dist/converter/index.js"
+    },
+    "./viewer": {
+      "types": "./dist/viewer/index.d.ts",
+      "default": "./dist/viewer/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "default": "./dist/react/index.js"
+    },
+    "./react/canvas": {
+      "types": "./dist/react/BimCanvas.d.ts",
+      "default": "./dist/react/BimCanvas.js"
+    },
+    "./dtaas": {
+      "types": "./dist/dtaas/index.d.ts",
+      "default": "./dist/dtaas/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "THIRD-PARTY-NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "sdk": "node scripts/install-sdk.mjs",
+    "wasm": "node scripts/inline-wasm.mjs",
+    "build": "yarn wasm && tsup && tsc --project tsconfig.build.json && tsc-alias --project tsconfig.build.json && node scripts/resolve-declaration-paths.mjs dist",
+    "typecheck": "yarn wasm && tsc --project tsconfig.eslint.json --noEmit",
+    "clean": "node --eval \"const { rmSync } = require('node:fs'); ['coverage', 'dist'].forEach((path) => rmSync(path, { recursive: true, force: true }))\"",
+    "format": "prettier --write \"*.{ts,mjs,json,md}\" \"{src,tests,scripts}/**/*.{ts,tsx,mjs,json,md}\"",
+    "format:check": "prettier --check \"*.{ts,mjs,json,md}\" \"{src,tests,scripts}/**/*.{ts,tsx,mjs,json,md}\"",
+    "syntax": "eslint . --fix",
+    "lint": "eslint .",
+    "test:unit": "yarn wasm && jest --config jest.config.json --coverageDirectory=coverage/unit tests/unit",
+    "test:int": "yarn wasm && jest --config jest.config.json --coverageDirectory=coverage/int tests/integration",
+    "test:coverage": "yarn wasm && jest --config jest.config.json --coverageDirectory=coverage/all --coverageThreshold='{\"global\":{\"lines\":90,\"statements\":90,\"functions\":90,\"branches\":85}}' tests/unit tests/integration",
+    "test:e2e": "yarn build && node tests/e2e/smoke-package.mjs",
+    "test:all": "yarn test:coverage && yarn test:e2e"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "dependencies": {
+    "three": "0.186.0",
+    "web-ifc": "0.0.77",
+    "zod": "4.4.3"
+  },
+  "peerDependencies": {
+    "@emotion/react": ">=11",
+    "@emotion/styled": ">=11",
+    "@into-cps-association/dtaas-sdk": "^0.1.0",
+    "@mui/icons-material": ">=5",
+    "@mui/material": ">=5",
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.6",
+    "@eslint/js": "10.0.1",
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@mui/icons-material": "9.4.0",
+    "@mui/material": "9.4.0",
+    "@testing-library/dom": "10.4.0",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.7",
+    "@types/jest": "30.0.0",
+    "@types/node": "26.1.1",
+    "@types/react": "19.2.6",
+    "@types/react-dom": "19.2.3",
+    "@types/three": "0.186.0",
+    "@typescript-eslint/eslint-plugin": "8.64.0",
+    "@typescript-eslint/parser": "8.64.0",
+    "eslint": "9.39.5",
+    "eslint-config-airbnb-base": "15.0.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-jest": "29.15.4",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "globals": "17.7.0",
+    "jest": "30.2.0",
+    "jest-environment-jsdom": "30.2.0",
+    "prettier": "3.9.5",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-router-dom": "7.18.4",
+    "ts-jest": "29.4.11",
+    "tsc-alias": "1.9.1",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3"
+  },
+  "resolutions": {
+    "esbuild": "0.28.1"
+  }
+}

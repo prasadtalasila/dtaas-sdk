@@ -6,19 +6,15 @@ import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import globals from 'globals';
 import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
-// Plugins resolve next to this file, like its static imports. Project files
-// resolve from the working directory, because qlty runs ESLint on a copy of
-// this config in its own cache.
-const configDirectory = path.dirname(fileURLToPath(import.meta.url));
-const workingDirectory = process.cwd();
+// The SDK's kit config only resolves after `yarn sdk` unpacks the built
+// package into node_modules; it is an ordinary dependency import here,
+// unlike the SDK repo's own config which reads its in-tree src/eslint.
+import dtaasKitConfig from '@into-cps-association/dtaas-sdk/eslint';
 
-// Node 24 strips the types of this type-only module, so the source is used directly.
-const { default: dtaasKitConfig } = await import(
-  pathToFileURL(path.join(workingDirectory, 'src/eslint/index.ts')).href
-);
+const configDirectory = path.dirname(fileURLToPath(import.meta.url));
 const compat = new FlatCompat({
   baseDirectory: configDirectory,
   recommendedConfig: js.configs.recommended,
@@ -34,12 +30,10 @@ const restrictedGlobal = {
 export default [
   {
     ignores: [
-      '**/coverage/',
-      '**/*.d.ts',
-      '**/dist/',
-      '**/node_modules/',
-      'docs/visualization/',
-      'examples/bim/**',
+      'dist/',
+      'coverage/',
+      'node_modules/',
+      'src/converter/generated/',
     ],
   },
   ...compat.extends(
@@ -143,17 +137,11 @@ export default [
       parser: tsParser,
       parserOptions: {
         requireConfigFile: false,
-        project: [path.join(workingDirectory, 'tsconfig.eslint.json')],
+        project: ['./tsconfig.eslint.json'],
       },
     },
     rules: {
       '@typescript-eslint/no-unnecessary-type-assertion': 'error',
-    },
-  },
-  {
-    files: ['**/*.slice.ts'],
-    rules: {
-      'no-param-reassign': ['error', { props: false }],
     },
   },
   {
@@ -170,9 +158,9 @@ export default [
       ],
     },
   },
-  // The example kit obeys the rules the SDK asks of every kit.
+  // The bim example obeys the same rules the SDK asks of every kit.
   ...dtaasKitConfig.map((config) => ({
     ...config,
-    files: ['examples/**/*.ts', 'examples/**/*.tsx'],
+    files: ['src/**/*.{ts,tsx}'],
   })),
 ];

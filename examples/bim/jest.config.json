@@ -2,9 +2,10 @@
   "preset": "ts-jest",
   "testEnvironment": "jsdom",
   "transform": {
-    "^.+\\.tsx?$": [
+    "^.+\\.[tj]sx?$": [
       "ts-jest",
       {
+        "allowJs": true,
         "tsconfig": {
           "jsx": "react-jsx",
           "noUnusedLocals": false,
@@ -12,38 +13,35 @@
           "esModuleInterop": true,
           "paths": {
             "src/*": ["./src/*"],
-            "tests/*": ["./tests/*"],
-            "examples/*": ["./examples/*"],
-            "@into-cps-association/dtaas-sdk": ["./src/index.ts"],
-            "@into-cps-association/dtaas-sdk/*": ["./src/*/index.ts"]
+            "tests/*": ["./tests/*"]
           }
         }
       }
     ]
   },
+  "transformIgnorePatterns": [
+    "/node_modules/(?!(@into-cps-association/dtaas-sdk|three/examples)/)"
+  ],
   "collectCoverage": true,
   "coverageReporters": ["text", "cobertura", "clover", "lcov", "json"],
   "collectCoverageFrom": [
     "src/**/*.{ts,tsx}",
     "!src/**/*.types.ts",
-    "!src/index.ts",
-    "!src/schema/index.ts",
-    "!src/testing/index.ts"
+    "!src/**/index.ts",
+    "!src/converter/generated/**"
   ],
   "testTimeout": 15000,
-  "modulePathIgnorePatterns": ["dist", "<rootDir>/examples/bim"],
+  "modulePathIgnorePatterns": ["dist"],
   "testRegex": "/tests/.*\\.test\\.tsx?$",
   "moduleDirectories": ["node_modules"],
   "modulePaths": ["<rootDir>"],
   "moduleNameMapper": {
     "^src/(.*)$": "<rootDir>/src/$1",
     "^tests/(.*)$": "<rootDir>/tests/$1",
-    "^examples/(.*)$": "<rootDir>/examples/$1",
-    "^@into-cps-association/dtaas-sdk$": "<rootDir>/src/index.ts",
-    "^@into-cps-association/dtaas-sdk/(.*)$": "<rootDir>/src/$1/index.ts",
     "\\.(css|less|scss)$": "<rootDir>/tests/__mocks__/styleMock.ts"
   },
   "verbose": true,
   "maxWorkers": 3,
-  "setupFiles": ["<rootDir>/tests/setupTests.ts"]
+  "setupFiles": ["<rootDir>/tests/setupTests.ts"],
+  "setupFilesAfterEnv": ["<rootDir>/tests/jest.setup.ts"]
 }
