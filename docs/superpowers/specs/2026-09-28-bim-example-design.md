@@ -142,6 +142,10 @@ are kept; narrative is trimmed.
    segments and percent-encoded dot segments.
 5. New `schema/migrate`: `manifestToVisualisation(manifest, { name, brokerUrl })`.
 6. `exportGlb` extracted from `BimCanvas` so the converter spec reuses it.
+7. `BuildingModels`: new `list?(directory): Promise<LibraryEntry[]>`; when
+   absent the page fetches `contentsUrl(libraryUrl, directory)` as 0.1.1
+   did. File bytes (IFC head, manifest, tree, GLB) are still fetched from
+   `fileUrl`, since `ContentsService.get` has no range reads.
 
 ## 7. DTaaS layer
 
@@ -153,6 +157,7 @@ are kept; narrative is trimmed.
 | `selected`, `onSelect` | `:model`; select → `navigate('/bim/models/<name>?dir=<dir>')` |
 | `DirectoryPicker` | `list = host.contents.list`; change → `navigate('/bim?dir=<folder>')` |
 | `libraryUrl` | `host.library.useBaseUrl()` |
+| `list` | `host.contents.list(directory)` mapped to `LibraryEntry` |
 | `onPersistGeometry` | `host.contents.put('<dir>/<name>.glb', glb)`; rejection logged with `host.logger.warn` and rethrown so the page reports "not stored" |
 | `readings`, `feed` | `useReadings(host.signals, bindings)` |
 
@@ -178,8 +183,13 @@ Extension:
 - `presets`: `bim.thermal-comfort` (`colorScale`, 18–26) and `bim.co2`
   (`colorScale`, 400–1400), substrate `aec`.
 - `scopes`: `bim.room`, `bim.storey`; group element ids by
-  `handle.userData.room` / `.storey` of `adapter.resolve({ kind: 'ifc-guid', ref })`
-  (the glTF `extras` the converter writes). Elements with no value are omitted.
+  `handle.userData.room` / `.storey` of
+  `adapter.resolve({ kind: 'ifc-guid', ref, signalPath: ref })`. The GLB's
+  glTF `extras` carry only `globalId`, `ifcClass` and `predefinedType`; room
+  and storey come from the property tree (`<model>.json`, `objects[globalId]`),
+  so this assumes the `aec` substrate copies those facts onto the element's
+  `userData`. Elements with neither are omitted. Recorded as an SDK gap:
+  `ScopeContext` carries no element properties.
 - No `fieldKernels`: bim's flood fill needs wall geometry, which the SDK's
   `FieldKernel(samples, grid)` does not carry. Recorded as an SDK gap.
 
