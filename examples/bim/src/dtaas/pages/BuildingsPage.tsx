@@ -29,6 +29,10 @@ function ModelsPanel({ route, directory }: Readonly<PanelProps>) {
   const libraryUrl = host.library.useBaseUrl();
   const [bindings, setBindings] = useState<Binding[]>([]);
   const { readings, feed } = useReadings(host.signals, bindings);
+  const onPersistGeometry = useMemo(
+    () => persistGeometry(host, directory),
+    [host, directory],
+  );
   if (!libraryUrl) return null;
   return (
     <BuildingModels
@@ -40,7 +44,7 @@ function ModelsPanel({ route, directory }: Readonly<PanelProps>) {
       onBindingsChange={setBindings}
       readings={readings}
       feed={feed}
-      onPersistGeometry={persistGeometry(host, directory)}
+      onPersistGeometry={onPersistGeometry}
     />
   );
 }

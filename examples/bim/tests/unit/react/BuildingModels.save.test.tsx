@@ -171,3 +171,29 @@ test('without a way to store, the canvas is never asked for the bytes', async ()
 
   expect(canvasProps().onConverted).toBeUndefined();
 });
+
+test('an earlier save that settles late does not overwrite a later one', async () => {
+  oneModel();
+  const first = deferred();
+  const second = deferred();
+  const pending = [first, second];
+  const user = userEvent.setup();
+  show({ onPersistGeometry: () => (pending.shift() ?? first).promise });
+
+  await screen.findByText(/1 IFC model/);
+  await choose(user, 'Building 1912 AK v4');
+  await act(async () => {
+    canvasProps().onConverted?.(new Uint8Array([1]));
+    canvasProps().onConverted?.(new Uint8Array([2]));
+  });
+  await open(second);
+  expect(await screen.findByText(/Stored in the library/)).toBeTruthy();
+
+  await act(async () => {
+    first.reject(new Error('refused'));
+    await first.promise.catch(() => {});
+  });
+
+  expect(screen.queryByText(/could not be stored/)).toBeNull();
+  expect(screen.getByText(/Stored in the library/)).toBeTruthy();
+});
