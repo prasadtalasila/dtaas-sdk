@@ -29,7 +29,8 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   when `list` is absent the page falls back to `contentsUrl`, as 0.1.1 did.
 - New `DirectoryPicker({ list, value, onChange })`, independent of DTaaS.
 - New `core/libraryPath.normaliseLibraryPath(raw)`, rejecting `..`, `.`,
-  a leading `/`, `\`, empty segments and percent-encoded dot segments.
+  a leading `/`, `\`, empty segments, and percent-encoded dot segments and
+  separators (`%2F`, `%5C`, `%00`).
 - New `schema/migrate.manifestToVisualisation(manifest, { name, brokerUrl })`.
 - `exportGlb` extracted from `BimCanvas` so the converter can reuse it.
 - A folder change resets the chosen model; switching models hides the
