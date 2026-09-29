@@ -78,7 +78,8 @@
     "@mui/icons-material": ">=5",
     "@mui/material": ">=5",
     "react": ">=19",
-    "react-dom": ">=19"
+    "react-dom": ">=19",
+    "react-router-dom": ">=7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.3.6",

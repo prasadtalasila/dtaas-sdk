@@ -35,6 +35,11 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A folder change resets the chosen model; switching models hides the
   toolbar and panels until the new viewer is ready.
 
+### Fixed
+
+- `react-router-dom` is now a peer dependency instead of being bundled into
+  `dist`, so the `Buildings` page reads the host's router context.
+
 ### Known gaps (recorded against the SDK)
 
 - `ScopeContext` carries no element properties, so `bim.room` / `bim.storey`
