@@ -83,16 +83,38 @@ function useDrawn({ url, convert, bindings, proposed, tree }: BimCanvasProps) {
   );
 }
 
-/** The callbacks the scene reports through, as one value that changes with them. */
-function useReports(props: BimCanvasProps) {
-  const { onReport, onReady, onHover, onSelect, onConverted } = props;
+type Reports = Pick<
+  BimCanvasProps,
+  'onReport' | 'onReady' | 'onHover' | 'onSelect' | 'onConverted'
+>;
+
+/**
+ * The callbacks the scene reports through, each calling the latest prop, so a
+ * host that passes them inline does not reload the model on every render.
+ * Only whether `onConverted` is given changes them: without it nothing is
+ * exported.
+ */
+function useReports(props: BimCanvasProps): Reports {
+  const latest = useRef(props);
+  useEffect(() => {
+    latest.current = props;
+  });
+  const exports = Boolean(props.onConverted);
   return useMemo(
-    () => ({ onReport, onReady, onHover, onSelect, onConverted }),
-    [onReport, onReady, onHover, onSelect, onConverted],
+    () => ({
+      onReport: (message) => latest.current.onReport?.(message),
+      onReady: (handle) => latest.current.onReady?.(handle),
+      onHover: (globalId) => latest.current.onHover?.(globalId),
+      onSelect: (globalId) => latest.current.onSelect?.(globalId),
+      onConverted: exports
+        ? (glb) => latest.current.onConverted?.(glb)
+        : undefined,
+    }),
+    [exports],
   );
 }
 
-/** The scene, rebuilt only when what it draws or reports to changes. */
+/** The scene, rebuilt only when what it draws changes. */
 function useCanvas(props: Readonly<BimCanvasProps>) {
   const holder = useRef<HTMLDivElement>(null);
   const { report, ...shown } = useCanvasStatus();

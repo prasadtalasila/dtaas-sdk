@@ -7,7 +7,7 @@
  * unconverted and concluded the save had failed.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { BimModel } from 'src/react/assets';
 import { useResetOn } from 'src/react/useResetOn';
 
@@ -49,13 +49,29 @@ function persist(
     .catch(() => mark('failed'));
 }
 
+/** Start a save of `model`, whose marks count only until a later save starts. */
+function useSaveMarks(setSaved: (saved: Saved) => void) {
+  const latest = useRef(0);
+  return useCallback(
+    (model: BimModel) => {
+      latest.current += 1;
+      const ticket = latest.current;
+      return (state: SaveState) => {
+        if (ticket === latest.current) setSaved({ model, state });
+      };
+    },
+    [setSaved],
+  );
+}
+
 /**
  * The save of the chosen model.
  *
  * A save belongs to the model it was made for. Choosing a model, even one
  * chosen before, starts it at `idle`, and a save that finishes after the
- * choice has moved on is not shown for the model now on screen. Once stored, `reload` lists the folder again, so the new GLB is paired
- * with its model and it reads as converted. A refused store is only reported:
+ * choice has moved on is not shown for the model now on screen, nor is one
+ * overtaken by a later save. Once stored, `reload` lists the folder again, so
+ * the new GLB is paired with its model and it reads as converted. A refused store is only reported:
  * the drawing on screen is unaffected, and the model reconverts next time.
  */
 export function useGeometrySave(
@@ -64,14 +80,15 @@ export function useGeometrySave(
   reload: () => void,
 ): GeometrySave {
   const [saved, setSaved] = useResetOn<Saved>(chosen, IDLE);
+  const startSave = useSaveMarks(setSaved);
 
   const onConverted = useCallback(
     (glb: Uint8Array) => {
       if (!chosen || !onPersistGeometry) return;
-      const mark = (state: SaveState) => setSaved({ model: chosen, state });
+      const mark = startSave(chosen);
       persist(chosen, glb, onPersistGeometry, { mark, reload });
     },
-    [chosen, onPersistGeometry, reload, setSaved],
+    [chosen, onPersistGeometry, reload, startSave],
   );
 
   return {

@@ -11,7 +11,11 @@ import {
   type FakeHostServices,
 } from '@into-cps-association/dtaas-sdk/testing';
 import { BIM_ROOT } from 'src/dtaas/ids';
-import { canvas, viewerReady } from 'tests/unit/react/buildingModels.support';
+import {
+  canvas,
+  canvasProps,
+  viewerReady,
+} from 'tests/unit/react/buildingModels.support';
 import {
   HOSPITAL_A_TOPIC,
   LIBRARY_FILES,
@@ -82,4 +86,14 @@ test('a downed connection marks the card not live, without clearing the value', 
 
   expect(await screen.findByText(/not live/)).toBeTruthy();
   expect(screen.getByText('21.5 °C')).toBeTruthy();
+});
+
+test('live readings leave the geometry save callback unchanged', async () => {
+  const host = await showHospitalA();
+  const before = canvasProps().onConverted;
+
+  emitTemperature(host, 21.5);
+  await screen.findByText('21.5 °C');
+
+  expect(canvasProps().onConverted).toBe(before);
 });

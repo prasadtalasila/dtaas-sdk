@@ -178,3 +178,29 @@ test('unmounting gives the renderer back and ignores a late model', async () => 
   expect(onReady).not.toHaveBeenCalled();
   expect(load().running()).toBe(false);
 });
+
+test('fresh callbacks on each render reach the scene without reloading it', async () => {
+  const { load, rerender } = mount({ onConverted: () => {} });
+  const onReady = jest.fn();
+  const onConverted = jest.fn();
+  rerender(
+    <BimCanvas
+      url="http://host/a.glb"
+      onReady={onReady}
+      onConverted={onConverted}
+    />,
+  );
+
+  await act(async () => load().onLoaded(wall()));
+  load().onConverted?.(new Uint8Array([1]));
+
+  expect(loadGeometry).toHaveBeenCalledTimes(1);
+  expect(onReady).toHaveBeenCalledTimes(1);
+  expect(onConverted).toHaveBeenCalledWith(new Uint8Array([1]));
+});
+
+test('without onConverted the scene is not asked to export', () => {
+  const { load } = mount();
+
+  expect(load().onConverted).toBeUndefined();
+});
