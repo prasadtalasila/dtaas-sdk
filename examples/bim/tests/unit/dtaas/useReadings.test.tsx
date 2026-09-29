@@ -52,6 +52,41 @@ describe('useReadings', () => {
     expect(result.current.readings.has('C')).toBe(false);
   });
 
+  it('starts from the stored value of each bound topic, before any new sample', () => {
+    const { signals } = fakeHostServices();
+    signals.emit(sampleOn('t1', 7, 100), sampleOn('t2', 'off', 100));
+
+    const { result } = renderHook(() => useReadings(signals, allBindings));
+
+    expect(result.current.readings.get('A')).toEqual({
+      value: 7,
+      receivedAt: 100,
+    });
+    expect(result.current.readings.get('B')).toEqual({
+      value: 7,
+      receivedAt: 100,
+    });
+    // A non-numeric stored value seeds nothing.
+    expect(result.current.readings.has('C')).toBe(false);
+  });
+
+  it('starts again from the store when the bindings change', () => {
+    const { signals } = fakeHostServices();
+    const { result, rerender } = renderHook(
+      ({ bindings }) => useReadings(signals, bindings),
+      { initialProps: { bindings: [] as Binding[] } },
+    );
+
+    act(() => signals.emit(sampleOn('t1', 5, 100)));
+    expect(result.current.readings.size).toBe(0);
+
+    rerender({ bindings: onlyA });
+    expect(result.current.readings.get('A')).toEqual({
+      value: 5,
+      receivedAt: 100,
+    });
+  });
+
   it('leaves an existing reading unchanged when a later sample is non-numeric', () => {
     const { signals } = fakeHostServices();
     const { result } = renderHook(() => useReadings(signals, onlyA));

@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type {
-  SignalSample,
-  SignalsService,
-} from '@into-cps-association/dtaas-sdk';
+import type { Sampled, SignalsService } from '@into-cps-association/dtaas-sdk';
 import {
   bindingsByTopic,
   objectOf,
@@ -20,7 +17,7 @@ export interface LiveReadings {
 const withSample = (
   previous: Map<string, Reading>,
   targets: readonly Binding[],
-  { value, ts }: SignalSample,
+  { value, ts }: Sampled,
 ) => {
   if (typeof value !== 'number' || targets.length === 0) return previous;
   const next = new Map(previous);
@@ -31,20 +28,37 @@ const withSample = (
   return next;
 };
 
+/** Each bound object's latest stored value, so a card is not blank until the next sample. */
+const storedReadings = (signals: SignalsService, bindings: Binding[]) => {
+  let readings = new Map<string, Reading>();
+  bindingsByTopic(bindings).forEach((targets, topic) => {
+    const stored = signals.valueAt(topic, 'measured');
+    if (stored) readings = withSample(readings, targets, stored);
+  });
+  return readings;
+};
+
 /**
- * Reset `readings` when the bound topics change.
+ * Start `readings` again from the store when the bound topics change.
  *
  * Done during render, not in the effect below: `react-hooks/set-state-in-effect`
  * refuses a synchronous `setState` at the top of an effect body, and this is
  * the pattern React's own docs recommend for state that must reset when a
  * prop changes (https://react.dev/learn/you-might-not-need-an-effect).
+ * `topics` changes with `bindings`, so every resubscription starts here.
  */
-const useResetOnTopicsChange = (topics: string[]) => {
-  const [readings, setReadings] = useState(() => new Map<string, Reading>());
-  const [seenTopics, setSeenTopics] = useState(topics);
-  if (seenTopics !== topics) {
-    setSeenTopics(topics);
-    setReadings(new Map());
+const useResetOnTopicsChange = (
+  signals: SignalsService,
+  bindings: Binding[],
+  topics: string[],
+) => {
+  const [readings, setReadings] = useState(() =>
+    storedReadings(signals, bindings),
+  );
+  const [seen, setSeen] = useState({ signals, topics });
+  if (seen.signals !== signals || seen.topics !== topics) {
+    setSeen({ signals, topics });
+    setReadings(storedReadings(signals, bindings));
   }
   return [readings, setReadings] as const;
 };
@@ -55,7 +69,11 @@ const useReadings = (
   bindings: Binding[],
 ): LiveReadings => {
   const topics = useMemo(() => topicsOf(bindings), [bindings]);
-  const [readings, setReadings] = useResetOnTopicsChange(topics);
+  const [readings, setReadings] = useResetOnTopicsChange(
+    signals,
+    bindings,
+    topics,
+  );
   const feed = signals.connection.use(topics);
   useEffect(() => {
     if (topics.length === 0) return undefined;
