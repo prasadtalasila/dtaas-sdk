@@ -25,6 +25,11 @@ yarn sdk   # builds the SDK root, packs it and installs the tarball here
 `@into-cps-association/dtaas-sdk` resolvable during development. Run it again
 after pulling in SDK changes.
 
+`three`, `web-ifc` and `zod` are dependencies. Everything a host must share
+with the package is a peer: `react`, `react-dom`, `react-router-dom`, MUI,
+Emotion and the SDK. The router is a peer because the `Buildings` page reads
+the host's router context; a bundled copy would read its own, empty one.
+
 ## 🧰 Scripts
 
 | Command                             | Purpose                                                            |
@@ -42,15 +47,15 @@ after pulling in SDK changes.
 
 ## 🚪 Entry points
 
-| Import                              | Contents                                                                            | Pulls in     |
-| ----------------------------------- | ----------------------------------------------------------------------------------- | ------------ |
-| `@into-cps-association/bim-example` | binding, resolver, readings, alerts, ramp, storeys, ifcName, `normaliseLibraryPath` | nothing      |
-| `.../schema`                        | `readManifest`, manifest schemas, `manifestToVisualisation`                         | `zod`        |
-| `.../converter`                     | `convertIfc`, the inlined web-ifc WASM                                              | `web-ifc`    |
-| `.../viewer`                        | `SceneView`, appearance, shortcuts, gizmo, outline, glow, field, `fieldSheet`       | `three`      |
-| `.../react`                         | `BuildingModels`, panels, `DirectoryPicker`, asset helpers                          | `react`, MUI |
-| `.../react/canvas`                  | `BimCanvas`, kept in its own chunk                                                  | `three`      |
-| `.../dtaas`                         | the `bim` `DtaasExtension`                                                          | the SDK root |
+| Import                              | Contents                                                                            | Pulls in                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------- |
+| `@into-cps-association/bim-example` | binding, resolver, readings, alerts, ramp, storeys, ifcName, `normaliseLibraryPath` | nothing                          |
+| `.../schema`                        | `readManifest`, manifest schemas, `manifestToVisualisation`                         | `zod`                            |
+| `.../converter`                     | `convertIfc`, the inlined web-ifc WASM                                              | `web-ifc`                        |
+| `.../viewer`                        | `SceneView`, appearance, shortcuts, gizmo, outline, glow, field, `fieldSheet`       | `three`                          |
+| `.../react`                         | `BuildingModels`, panels, `DirectoryPicker`, asset helpers                          | `react`, MUI                     |
+| `.../react/canvas`                  | `BimCanvas`, kept in its own chunk                                                  | `three`                          |
+| `.../dtaas`                         | the `bim` `DtaasExtension`                                                          | the SDK root, `react-router-dom` |
 
 ## 🧭 URL scheme
 

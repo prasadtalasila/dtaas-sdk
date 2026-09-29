@@ -30,7 +30,7 @@ Success criteria:
 | Location | `examples/bim/`, standalone package `@into-cps-association/bim-example`, `private: true`, extension id `bim` |
 | Tests | Jest 30 + ts-jest + jsdom + RTL + user-event; `tests/unit`, `tests/integration`, `tests/e2e`; gate 90/85 |
 | SDK consumption | SDK is a peer; `yarn sdk` builds, packs and unpacks the SDK tarball into `examples/bim/node_modules` (a `file:` dependency copies the whole repo or fails lockfile integrity) |
-| Dependencies | `dependencies`: `web-ifc`, `three`, `zod`. `peerDependencies` (also in `devDependencies`): `react`, `react-dom`, the SDK, `@mui/material`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled`. Everything else `devDependencies` |
+| Dependencies | `dependencies`: `web-ifc`, `three`, `zod`. `peerDependencies` (also in `devDependencies`): `react`, `react-dom`, `react-router-dom` (the page reads the host's router context, so it must not be bundled), the SDK, `@mui/material`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled`. Everything else `devDependencies` |
 | Routing convention | Option A1: extension routes mount at `/<id>/*`; navigation paths stay absolute and must be `/<id>` or under `/<id>/` |
 | bim URLs | `/bim` and `/bim/models/:model`, folder in `?dir=` |
 | Model folder | `?dir=` → `REACT_APP_EXT_BIM_MODELS_DIRECTORY` → `host.library.conventions.modelsDirectory`; user picks another with `DirectoryPicker` |
