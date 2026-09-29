@@ -22,6 +22,9 @@ describe('normaliseLibraryPath', () => {
     'projects/%2e%2e/secret',
     'a/%2E',
     'a\u0000b',
+    '..%2F..%2Fetc',
+    'a%2F..%2Fb',
+    'a%5Cb',
   ])('rejects %p', (raw) => {
     expect(normaliseLibraryPath(raw)).toBeNull();
   });

@@ -8,13 +8,17 @@ const decoded = (segment: string) => {
   }
 };
 
-const isUnsafe = (segment: string) =>
-  UNSAFE.has(segment) || UNSAFE.has(decoded(segment));
+const SEPARATOR = /[/\\\0]/;
+
+const isUnsafe = (segment: string) => {
+  const plain = decoded(segment);
+  return UNSAFE.has(segment) || UNSAFE.has(plain) || SEPARATOR.test(plain);
+};
 
 /**
  * A user-supplied folder as a clean, library-relative path, or `null` when
- * it could leave the library. Percent-encoded dot segments are caught too,
- * because the server may decode them again.
+ * it could leave the library. Percent-encoded dot segments and separators
+ * are caught too, because the server may decode them again.
  */
 export const normaliseLibraryPath = (
   raw: string | null | undefined,
