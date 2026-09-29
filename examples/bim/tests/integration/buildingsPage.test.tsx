@@ -85,6 +85,28 @@ describe('the folder a person browses to', () => {
     ).toBeTruthy();
   });
 
+  it('calls host.contents.list on the contents service, never detached', async () => {
+    const bim = host();
+    const { contents } = bim;
+    const listed = contents.list.bind(contents);
+    const list = jest.spyOn(contents, 'list').mockImplementation(function list(
+      this: unknown,
+      path: string,
+    ) {
+      if (this !== contents) throw new Error('list was called detached');
+      return listed(path);
+    });
+    const user = userEvent.setup();
+    renderWithHost(<App />, { host: bim, route: BIM_ROOT });
+
+    expect(await screen.findByText(/2 IFC models/)).toBeTruthy();
+    await user.click(
+      screen.getByRole('button', { name: 'Folder: common/models' }),
+    );
+    expect(await screen.findByRole('button', { name: 'Up' })).toBeTruthy();
+    expect(list).toHaveBeenCalledTimes(2);
+  });
+
   it('is read from ?dir= when one is given', async () => {
     const user = userEvent.setup();
     renderWithHost(<App />, {
@@ -123,6 +145,43 @@ describe('the folder a person browses to', () => {
       await screen.findByText(/is not a folder in your library/),
     ).toBeTruthy();
     expect(list).not.toHaveBeenCalled();
+  });
+
+  it('offers the fallback folder in the picker under the rejection', async () => {
+    const bim = host();
+    const list = jest.spyOn(bim.contents, 'list');
+    const user = userEvent.setup();
+    renderWithHost(<App />, {
+      host: bim,
+      route: `${BIM_ROOT}?dir=projects/%2e%2e/secret`,
+    });
+
+    await screen.findByText(/is not a folder in your library/);
+    await user.click(
+      screen.getByRole('button', { name: 'Folder: common/models' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Use this folder' }));
+
+    expect(await screen.findByText('/bim?dir=common/models')).toBeTruthy();
+    expect(list).not.toHaveBeenCalledWith('projects/%2e%2e/secret');
+    expect(list).not.toHaveBeenCalledWith('projects/../secret');
+  });
+
+  it('starts the picker at the library root when the fallback is rejected too', async () => {
+    const bim = fakeHostServices({
+      extensionId: 'bim',
+      files: LIBRARY_FILES,
+      env: { REACT_APP_EXT_BIM_MODELS_DIRECTORY: '../outside' },
+    });
+    const list = jest.spyOn(bim.contents, 'list');
+    const user = userEvent.setup();
+    renderWithHost(<App />, { host: bim, route: BIM_ROOT });
+
+    await screen.findByText(/"..\/outside" is not a folder/);
+    await user.click(screen.getByRole('button', { name: /^Folder:/ }));
+
+    expect(await screen.findByRole('button', { name: 'common' })).toBeTruthy();
+    expect(list).not.toHaveBeenCalledWith('../outside');
   });
 });
 

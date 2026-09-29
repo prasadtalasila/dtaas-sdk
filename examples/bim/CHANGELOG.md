@@ -40,6 +40,12 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `react-router-dom` is now a peer dependency instead of being bundled into
   `dist`, so the `Buildings` page reads the host's router context.
+- A live reading no longer remounts the 3D scene; `BimCanvas` reads its
+  callbacks through a ref, so inline callbacks from a host do not reload it.
+- A save overtaken by a later one no longer overwrites its state.
+- An invalid `?dir=` offers the folder picker at the fallback folder.
+- Sensor cards start from the latest stored value instead of being blank
+  until the next sample.
 
 ### Known gaps (recorded against the SDK)
 

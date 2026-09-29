@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import type { LibraryEntry } from 'src/react/assets';
+import { messageOf } from 'src/react/libraryJson';
 
 export interface FolderListing {
   entries: LibraryEntry[];
@@ -17,10 +18,6 @@ export interface FolderListing {
 }
 
 const IDLE: FolderListing = { entries: [], loading: false, error: null };
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 /** Fetch one folder's listing, ignoring the answer if `path` has moved on by the time it arrives. */
 function fetchInto(

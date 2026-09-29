@@ -67,7 +67,9 @@ The extension mounts at `/bim`:
 The folder shown, in order: the `?dir=` query parameter, then the
 `REACT_APP_EXT_BIM_MODELS_DIRECTORY` extension setting, then the host's
 `library.conventions.modelsDirectory` default. An invalid `?dir=` (one that
-could leave the library) shows an alert and fetches nothing.
+could leave the library) shows an alert, fetches nothing for it, and offers
+the folder picker at the fallback folder so a valid one can be chosen. Live
+readings start from the latest stored value of each bound topic.
 
 Selecting a model navigates to `/bim/models/<name>?dir=<dir>`; changing the
 folder navigates to `/bim?dir=<folder>` and resets the chosen model.

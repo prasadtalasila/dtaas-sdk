@@ -78,11 +78,6 @@ The host owns `auth`, `library`, `contents`, `git`, `ui`, `logger`,
 `settings` and `config`. The common core owns `signals` and `viz`, and the
 host only instantiates it with endpoints from `env.js`.
 
-## Mounting extension routes
-
-The host mounts each extension's routes at `/<id>/*`, so a kit may use
-nested relative `<Routes>` to define its route hierarchy.
-
 ### Connection status
 
 `signals.connection` is required. `get(paths)` returns the worst state of the
@@ -90,6 +85,11 @@ transports serving those paths; a path no transport serves is `down`.
 `get([])` is `live`, but `get()` with no transports at all is `down`. Use
 `worstConnectionState` to aggregate several states the same way. `use()` must
 re-render when the state changes.
+
+## Mounting extension routes
+
+The host mounts each extension's routes at `/<id>/*`, so a kit may use
+nested relative `<Routes>` to define its route hierarchy.
 
 ## Validating `visualisation.json`
 
